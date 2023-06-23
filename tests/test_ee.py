@@ -11,6 +11,7 @@ EMITTANCE = {'t': {'X':1.46e-9, 'Y':2.9e-12, 'Z': 1.0}, 'z': {'X':0.71e-9, 'Y':1
 TURNS = {'t': 45, 'z': 2500}
 TEST_DIR = Path(__file__).resolve().parent
 
+
 @pytest.mark.parametrize("mode", ['t']) # use t mode for now, since z takes quite long
 def test_simple_radial(mode):
     with open(TEST_DIR/'input'/f'tapered_{mode}_b1_thin.json', 'r', encoding='utf-8') as fid:
@@ -21,9 +22,8 @@ def test_simple_radial(mode):
 
     ref_particle = xp.Particles(mass0=xp.ELECTRON_MASS_EV, q0=1, p0c=ENERGY[mode]*10**9, x=0, y=0)
     line.particle_ref = ref_particle
-    tracker = xt.Tracker(_context=context, line=line)
+    line.build_tracker(_context=context)
     line.configure_radiation(model='mean')
-#     tracker.configure_radiation(model='mean')
 
     DA = xd.DA(name=f'fcc_ee_{mode}',
                normalised_emittance=[EMITTANCE[mode]['X']*ref_particle.beta0[0]*ref_particle.gamma0[0],
@@ -45,9 +45,8 @@ def test_simple_grid(mode):
 
     ref_particle = xp.Particles(mass0=xp.ELECTRON_MASS_EV, q0=1, p0c=ENERGY[mode]*10**9, x=0, y=0)
     line.particle_ref = ref_particle
-    tracker = xt.Tracker(_context=context, line=line)
+    line.build_tracker(_context=context)
     line.configure_radiation(model='mean')
-#     tracker.configure_radiation(model='mean')
 
     DA = xd.DA(name=f'fcc_ee_{mode}',
                normalised_emittance=[EMITTANCE[mode]['X']*ref_particle.beta0[0]*ref_particle.gamma0[0],
