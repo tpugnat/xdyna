@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy import interpolate, integrate
 from scipy.special import lambertw as W
 
 

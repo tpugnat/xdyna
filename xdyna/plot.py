@@ -1,5 +1,6 @@
+import numpy as np
 import matplotlib.pyplot as plt
-
+from .postprocess_tools import fit_DA
 
 
 def plot_particles(DA, ax=None, at_turn=None, type_plot="polar", seed=None,
@@ -221,7 +222,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
         kwargs.pop('color')
         print("Warning: ignoring parameter 'color'. Use 'closses' and 'csurviving' instead.")
     label = kwargs.pop('label', '')
-    label = kwargs.pop('alpha', 1)
+    alpha = kwargs.pop('alpha', 1)
 
     if to_turn is None:
         to_turn=DA.max_turns
