@@ -80,6 +80,8 @@ DA.calculate_davsturns(from_turn=from_t,to_turn=to_t)
 
 # Plots
 # -------------------------------------------------------------
+from xdyna.plot import plot_particles, plot_da_border, plot_davsturns_border
+
 # Buildin routines have been implement in order to easily plot the results.
 type_plot="polar"
 fig, ax=plt.subplots(2,1,figsize=(10,10));
@@ -88,25 +90,25 @@ fig, ax=plt.subplots(2,1,figsize=(10,10));
 # There is a routine ploting the particle distribution. The turn at which the particle status must be 
 # taken must be given, otherwise the status at the end of the simulation is used. Similarly, the type 
 # of plot must be given: either 'cartesian' for x-y plot and 'polar' for ang-amp plot.
-DA.plot_particles(ax[0], 
-                  at_turn=t,             # Status at this turn
-                  type_plot=type_plot,   # Plot type: 'cartesian' or 'polar'
-                  csurviving="blue",     # Color for surviving parts.
-                  closses="red",         # Color for losses.
-                  size_scaling="log",    # Losses dot size: 'log', 'linear' or None 
-                  alpha=1)
+plot_particles(DA,ax[0], 
+               at_turn=t,             # Status at this turn
+               type_plot=type_plot,   # Plot type: 'cartesian' or 'polar'
+               csurviving="blue",     # Color for surviving parts.
+               closses="red",         # Color for losses.
+               size_scaling="log",    # Losses dot size: 'log', 'linear' or None 
+               alpha=1)
 
 
 # This routine plots the DA border in the same format as the previous function. Similarly to 
 # "plot_particle", the turn and the type of plot must be given. The routine plots 2 borders 
 # representing an upper and a lower estimation of the DA.
-DA.plot_da_border(ax[0], 
-                  at_turn=t,             # Status at this turn
-                  type_plot=type_plot,   # Plot type: 'cartesian' or 'polar'
-                  clower="blue",         # Color for lower da estimation.
-                  cupper="red",          # Color for upper da estimation.
-                  alpha=1, 
-                  label="DA")
+plot_da_border(DA,ax[0], 
+               at_turn=t,             # Status at this turn
+               type_plot=type_plot,   # Plot type: 'cartesian' or 'polar'
+               clower="blue",         # Color for lower da estimation.
+               cupper="red",          # Color for upper da estimation.
+               alpha=1, 
+               label="DA")
 ax[0].set_title(f'DA at {t}')
 ax[0].legend(prop={'size': 15})
 
@@ -114,12 +116,11 @@ ax[0].legend(prop={'size': 15})
 # This routine plots the evolution of the DA (minimum, average and maximum values) as a function of turns. 
 # Similarly to "calculate_davsturns" the turn range must be given. The routine also plots the values for 
 # the upper and lower estimation of the DA.
-DA.plot_davsturns_border(ax[1], 
-                         from_turn=from_t, 
-                         to_turn=to_t,
-                         clower="blue",  # Color for lower da estimation.
-                         cupper="red"    # Color for upper da estimation.
-                        )
+plot_davsturns_border(DA,ax[1], 
+                      from_turn=from_t, 
+                      to_turn=to_t,
+                      clower="blue",  # Color for lower da estimation.
+                      cupper="red")   # Color for upper da estimation.
 ax[1].set_title('DA vs Turns')
 ax[1].legend(prop={'size': 15})
 
