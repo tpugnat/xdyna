@@ -168,6 +168,70 @@ def Model_4n(N, rho=1, K=1, mu=1):           # Eq. 4 from Frederik
     return rho / (- np.real(W( (mu*N)**(-2/K) ,k=-1)) )**K  
 Model_4n_default ={'rho':1, 'K':1, 'mu':1}
 Model_4n_boundary={'rho':[1e-10,np.inf], 'K':[0.01,2], 'mu':[1e-10,1e10]}
+
+
+def select_model(model,model_default={},model_boundary={},name='user'):
+    if isinstance(model,str):
+        model=model.lower()
+        if ('model_2' ==model) or ('2' ==model):
+            name='2';  
+            model=Model_2;   
+            model_default =Model_2_default.copy();   
+            model_boundary=Model_2_boundary.copy();
+#                 keys=[k for k in Model_2_default.keys()];
+        if ('model_2b'==model) or ('2b'==model):
+            name='2b'; 
+            model=Model_2b;  
+            model_default =Model_2b_default.copy();  
+            model_boundary=Model_2b_boundary.copy();
+#                 keys=[k for k in Model_2b_default.keys()];
+        if ('model_2n'==model) or ('2n'==model):
+            name='2n'; 
+            model=Model_2n;  
+            model_default =Model_2n_default.copy();  
+            model_boundary=Model_2n_boundary.copy();
+#                 keys=[k for k in Model_2n_default.keys()];
+        if ('model_4' ==model) or ('4' ==model):
+            name='4';  
+            model=Model_4;   
+            model_default =Model_4_default.copy();   
+            model_boundary=Model_4_boundary.copy();
+#                 keys=[k for k in Model_4_default.keys()];
+        if ('model_4b'==model) or ('4b'==model):
+            name='4b'; 
+            model=Model_4b;  
+            model_default =Model_4b_default.copy();  
+            model_boundary=Model_4b_boundary.copy();
+#                 keys=[k for k in Model_4b_default.keys()];
+        if ('model_4n'==model) or ('4n'==model):
+            name='4n'; 
+            model=Model_4n;  
+            model_default =Model_4n_default.copy();  
+            model_boundary=Model_4n_boundary.copy();
+#                 keys=[k for k in Model_4n_default.keys()];
+    elif not isinstance(model_default,dict) or not isinstance(model_boundary,dict):
+        raise ValueError('If you give your own model, give model_default and model_boundary parameter as dictionaries.')
+    return name, model, model_default, model_boundary
+            
+            
+    model=model.lower()
+    if isinstance(model,str):
+        if model in ['model_2','model_2b','model_2n','model_4','model_4b','model_4n',
+                     '2','2b','2n','4','4b','4n']:
+            if ('model_2' ==model) or ('2' ==model):
+                name='2';  model=Model_2;   keys=[k for k in Model_2_default.keys()];
+            if ('model_2b'==model) or ('2b'==model):
+                name='2b'; model=Model_2b;  
+            if ('model_2n'==model) or ('2n'==model):
+                name='2n'; model=Model_2n;  
+            if ('model_4' ==model) or ('4' ==model):
+                name='4';  model=Model_4;   
+            if ('model_4b'==model) or ('4b'==model):
+                name='4b'; model=Model_4b;  
+            if ('model_4n'==model) or ('4n'==model):
+                name='4n'; model=Model_4n;  
+    elif keys is None:
+            raise ValueError('Please specify the parameters name as keys.')
 # --------------------------------------------------------
 
     

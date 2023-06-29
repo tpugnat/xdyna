@@ -21,7 +21,7 @@ import xpart as xp
 
 # from .postprocess_tools import *
 from .postprocess_tools import trapz, simpson, alter_simpson, compute_da_1D, compute_da_2D, compute_da_4D, fit_DA
-from .postprocess_tools import _da_raw, _da_smoothing
+from .postprocess_tools import _da_raw, _da_smoothing, select_model
 from .protectfile import ProtectFile
 from .da_meta import _DAMetaData
 from .geometry import _bleed, distance_to_polygon_2D
@@ -1383,9 +1383,9 @@ or for multiseeds:
             at_turn=self.max_turns
             
         if self._da is None:
-#             self._da=pd.DataFrame(columns=['t', 'da','damin','damax','da low','damin low','damax low', \
-#                                            'da up','damin up','damax up', 'seed'])
-            self._da=pd.DataFrame(columns=['t', 'da low','damin low','damax low','da up','damin up','damax up', 'seed'])
+#             self._da=pd.DataFrame(columns=['t','seed', 'da','damin','damax','da low','damin low','damax low', \
+#                                            'da up','damin up','damax up'])
+            self._da=pd.DataFrame(columns=['t','seed', 'da low','damin low','damax low','da up','damin up','damax up'])
             if self.meta.nseeds==0:
                 self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
                 self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
@@ -1897,8 +1897,8 @@ or for multiseeds:
     # =================================================================
 
     # Not allowed on parallel process
-    def _fit_model(self,nb_param,data_type,model,model_default=None,model_boundary=None,seed=None,
-                   nrand=1000,nsig=2,save=True,force=False):
+    def _fit_model(self,nb_param,data_type,model,name='user',model_default=None,model_boundary=None,seed=None,
+                   nrand=1000,nsig=2,ntry=1,save=True,force=False):
         '''DA vs turns fitting procedure.
     
     Parameters
@@ -1915,33 +1915,37 @@ or for multiseeds:
             self.read_da_model()
         
         # Model selection
-        name='user';
-        if isinstance(model,str):
-            model=model.lower()
-            if ('model_2' ==model) or ('2' ==model):
-                name='2';  model=Model_2;   model_default=Model_2_default.copy();   model_boundary=Model_2_boundary.copy()
-            if ('model_2b'==model) or ('2b'==model):
-                name='2b'; model=Model_2b;  model_default=Model_2b_default.copy();  model_boundary=Model_2b_boundary.copy()
-            if ('model_2n'==model) or ('2n'==model):
-                name='2n'; model=Model_2n;  model_default=Model_2n_default.copy();  model_boundary=Model_2n_boundary.copy()
-            if ('model_4' ==model) or ('4' ==model):
-                name='4';  model=Model_4;   model_default=Model_4_default.copy();   model_boundary=Model_4_boundary.copy()
-            if ('model_4b'==model) or ('4b'==model):
-                name='4b'; model=Model_4b;  model_default=Model_4b_default.copy();  model_boundary=Model_4b_boundary.copy()
-            if ('model_4n'==model) or ('4n'==model):
-                name='4n'; model=Model_4n;  model_default=Model_4n_default.copy();  model_boundary=Model_4n_boundary.copy()
-            if 'N0' in model_boundary:
-                model_boundary['N0'][1]=self.max_turns
-        elif isinstance(model_default,dict) or isinstance(model_boundary,dict):
-            raise ValueError('If you give your own model, also give the model_default and model_boundary parameter values. They must be in the form of a dictionary.')
+        name, model, model_default, model_boundary=select_model(model,model_default=model_default,
+                                                                model_boundary=model_boundary,name=name)
+        if 'N0' in model_boundary:
+            model_boundary['N0'][1]=self.max_turns
+#         if isinstance(model,str):
+#             model=model.lower()
+#             if ('model_2' ==model) or ('2' ==model):
+#                 name='2';  model=Model_2;   model_default=Model_2_default.copy();   model_boundary=Model_2_boundary.copy()
+#             if ('model_2b'==model) or ('2b'==model):
+#                 name='2b'; model=Model_2b;  model_default=Model_2b_default.copy();  model_boundary=Model_2b_boundary.copy()
+#             if ('model_2n'==model) or ('2n'==model):
+#                 name='2n'; model=Model_2n;  model_default=Model_2n_default.copy();  model_boundary=Model_2n_boundary.copy()
+#             if ('model_4' ==model) or ('4' ==model):
+#                 name='4';  model=Model_4;   model_default=Model_4_default.copy();   model_boundary=Model_4_boundary.copy()
+#             if ('model_4b'==model) or ('4b'==model):
+#                 name='4b'; model=Model_4b;  model_default=Model_4b_default.copy();  model_boundary=Model_4b_boundary.copy()
+#             if ('model_4n'==model) or ('4n'==model):
+#                 name='4n'; model=Model_4n;  model_default=Model_4n_default.copy();  model_boundary=Model_4n_boundary.copy()
+#             if 'N0' in model_boundary:
+#                 model_boundary['N0'][1]=self.max_turns
+#         elif isinstance(model_default,dict) or isinstance(model_boundary,dict):
+#             raise ValueError('If you give your own model, also give the model_default and model_boundary parameter values. They must be in the form of a dictionary.')
 
         # Data type selection
         if self.meta.nseeds!=0:
             row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1],f'{seed}')], names=["method", "type", "seed"])
-            x=np.array(self._lower_davsturns[seed].loc[:,'turn'].values, dtype=float)
             if 'lower' == data_type[0]:
+                x=np.array(self._lower_davsturns[seed].loc[:,'turn'].values, dtype=float)
                 y=np.array(self._lower_davsturns[seed].loc[:, data_type[1] ].values, dtype=float)
             elif 'upper' == data_type[0]:
+                x=np.array(self._upper_davsturns[seed].loc[:,'turn'].values, dtype=float)
                 y=np.array(self._upper_davsturns[seed].loc[:, data_type[1] ].values, dtype=float)
             elif data_type[0] in ['uniform','normal']:
                 xdata =np.array(self._lower_davsturns[seed].loc[:,'turn'].values, dtype=float)
@@ -1963,13 +1967,16 @@ or for multiseeds:
                         yrand[mask]=(yup-ylo)*(yrand[mask]/nsig+0.5)+ylo
                 x=xrand; y=yrand
             else:
-                raise ValueError('data_type must be one of the following form: [lower,upper,uniform,normal]_[min,max,avg]')
+#                 raise ValueError('data_type must be one of the following form: [lower,upper,uniform,normal]_[min,max,avg]')
+                raise ValueError('data_type must be one of the following form: ([lower,upper,uniform,normal],[min,max,avg]')
 
         else:
             row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1])], names=["method", "type"])
             if 'lower' == data_type[0]:
+                x=np.array(self._lower_davsturns.loc[:,'turn'].values, dtype=float)
                 y=np.array(self._lower_davsturns.loc[:, data_type[1] ].values, dtype=float)
             elif 'upper' == data_type[0]:
+                x=np.array(self._upper_davsturns.loc[:,'turn'].values, dtype=float)
                 y=np.array(self._upper_davsturns.loc[:, data_type[1] ].values, dtype=float)
             elif data_type[0] in ['uniform','normal']:
                 xdata =np.array(self._lower_davsturns.loc[:,'turn'].values, dtype=float)
@@ -1998,11 +2005,13 @@ or for multiseeds:
 
         # Manage duplicate analysis
         if not force and self._da_model is not None:
-            if self._da_model.index.isin([row[-1]]).any() and self._da_model.columns.isin([(name,nb_param,'res')]).any() and not np.isnan(self._da_model.loc[row[-1],(name,nb_param,'res')]):
-                if self.meta.nseeds!=0:
-                    print(f'Skip {data_type} Model {name} (Nb. param: {nb_param}) for seed {seed}')
-                else:
-                    print(f'Skip {data_type} Model {name} (Nb. param: {nb_param})')
+            col=(name,nb_param,'res')
+            if self._da_model.index.isin([row[-1]]).any() and self._da_model.columns.isin([col]).any() and \
+            not np.isnan(self._da_model.loc[row[-1],col]) and self._da_model.loc[row[-1],col]>0:
+#                 if self.meta.nseeds!=0:
+#                     print(f'Skip {data_type} Model {name} (Nb. param: {nb_param}) for seed {seed}')
+#                 else:
+#                     print(f'Skip {data_type} Model {name} (Nb. param: {nb_param})')
                 return
         if self.meta.nseeds!=0:
             print(f'Running {data_type} Model {name} (Nb. param: {nb_param}) for seed {seed}')
@@ -2022,15 +2031,14 @@ or for multiseeds:
                 dflt_new, sg=curve_fit(model,x,y,p0=dflt,bounds=bndr)
                 error=((y - model(x,**model_default))**2).sum() / (len(y)-nprm)
             except Exception as err:
-                warnings.warn(f"[{type(err)}] No solution found for {data_type} Model {name} (Nb. param: {nprm}). Return 0.")
-                dflt_new=tuple([0 for k in dflt]); error=0
+                warnings.warn(f"[{type(err)}] No solution found for {data_type} Model {name} (Nb. param: {nprm}). Return -1.")
+                dflt_new=tuple([-1 for k in dflt]); error=-1
                 
             # Select param default and boundary values
             for k in range(0,nprm):
                 model_default[keys_fit[k]]=dflt_new[k]
                 res[(name,nprm,keys_fit[k])]=[dflt_new[k]]
             res[(name,nprm,'res')]=[ error ]
-                
             
         # Save results
         res=pd.DataFrame(res,index=row)
@@ -2045,12 +2053,13 @@ or for multiseeds:
             self._da_model.loc[row[0],res.columns]=res.loc[row[0],res.columns]
             
         if save:
+            self._da_model=self._da_model.fillna(-1)
             self.write_da_model()
 
             
     # Not allowed on parallel process
     def _fit_model_from_list(self,nb_param,list_data_types=None,list_models=['2','2b','2n','4','4b','4n'],
-                             list_seeds=None,nrand=1000,nsig=2,force=False):
+                             list_seeds=None,nrand=1000,nsig=2,ntry=1,force=False):
         '''DA vs turns fitting procedure for a list of data_types, model or seed.
     
     Parameters
@@ -2070,17 +2079,18 @@ or for multiseeds:
             else:
                 list_seeds = [None]
         
-        for ss in list_seeds:
-            for dt in list_data_types:
-                for md in list_models:
+        for dt in list_data_types:
+            for md in list_models:
+                for ss in list_seeds:
                     self._fit_model(nb_param=nb_param,data_type=dt,model=md,seed=ss,
                                     nrand=nrand,nsig=nsig,save=False,force=False)
         
+        self._da_model=self._da_model.fillna(-1)
         self.write_da_model()
         
         
     # Not allowed on parallel process
-    def get_model_parameters(self,data_type,model,nb_parm,keys=None,seed=None):
+    def get_model_parameters(self,data_type,model,nb_parm,keys=None,seed=None,name='user'):
         '''DA vs turns fitting procedure for a list of data_types, model or seed.
     
     Parameters
@@ -2102,29 +2112,35 @@ or for multiseeds:
         if self._da_model is None:
             raise FileNotFoundError('No data for model fitting have been found.')
         
-        model=model.lower()
-        if isinstance(model,str):
-            if model in ['Model_2','Model_2b','Model_2n','Model_4','Model_4b','Model_4n',
-                         '2','2b','2n','4','4b','4n']:
-                if ('Model_2' ==model) or ('2' ==model):
-                    name='2';  model=Model_2;   keys=[k for k in Model_2_default.keys()];
-                if ('Model_2b'==model) or ('2b'==model):
-                    name='2b'; model=Model_2b;  keys=[k for k in Model_2b_default.keys()];
-                if ('Model_2n'==model) or ('2n'==model):
-                    name='2n'; model=Model_2n;  keys=[k for k in Model_2n_default.keys()];
-                if ('Model_4' ==model) or ('4' ==model):
-                    name='4';  model=Model_4;   keys=[k for k in Model_4_default.keys()];
-                if ('Model_4b'==model) or ('4b'==model):
-                    name='4b'; model=Model_4b;  keys=[k for k in Model_4b_default.keys()];
-                if ('Model_4n'==model) or ('4n'==model):
-                    name='4n'; model=Model_4n;  keys=[k for k in Model_4n_default.keys()];
-        elif keys is None:
+        # Model selection
+        name, model, model_default, dmp=select_model(model,name=name)
+#         model=model.lower()
+#         if isinstance(model,str):
+#             if model in ['Model_2','Model_2b','Model_2n','Model_4','Model_4b','Model_4n',
+#                          '2','2b','2n','4','4b','4n']:
+#                 if ('Model_2' ==model) or ('2' ==model):
+#                     name='2';  model=Model_2;   keys=[k for k in Model_2_default.keys()];
+#                 if ('Model_2b'==model) or ('2b'==model):
+#                     name='2b'; model=Model_2b;  keys=[k for k in Model_2b_default.keys()];
+#                 if ('Model_2n'==model) or ('2n'==model):
+#                     name='2n'; model=Model_2n;  keys=[k for k in Model_2n_default.keys()];
+#                 if ('Model_4' ==model) or ('4' ==model):
+#                     name='4';  model=Model_4;   keys=[k for k in Model_4_default.keys()];
+#                 if ('Model_4b'==model) or ('4b'==model):
+#                     name='4b'; model=Model_4b;  keys=[k for k in Model_4b_default.keys()];
+#                 if ('Model_4n'==model) or ('4n'==model):
+#                     name='4n'; model=Model_4n;  keys=[k for k in Model_4n_default.keys()];
+#         elif keys is None:
+        if keys is None and model_default=={}:
             raise ValueError('Please specify the parameters name as keys.')
+        else:
+            keys=[k for k in model_default.keys()];
+            
         if seed is None and xdyna_da.meta.nseeds!=0:
             raise ValueError('Please specify the seed.')
         
         if self.meta.nseeds!=0:
-            row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1],f'{seed}')], names=["method", "type", "seed"])
+            row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1],str(seed))], names=["method", "type", "seed"])
         else:
             row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1])], names=["method", "type"])
         param={k:self._da_model.loc[row[0],(name,nb_parm,k)] for k in keys}
