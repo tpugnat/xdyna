@@ -2049,23 +2049,24 @@ or for multiseeds:
         res=pd.DataFrame()
         for s,(x,y) in enumerate(zip(lx,ly)):
             sres={}
+            smodel_default=model_default.copy()
             for nprm in range(1,min(nb_param,len(keys))+1):
                 # Select param default and boundary values
                 keys_fit=keys[:nprm]
-                dflt=tuple([model_default[k]  for k in keys_fit])
+                dflt=tuple([smodel_default[k]  for k in keys_fit])
                 bndr=([model_boundary[k][0] for k in keys_fit],[model_boundary[k][1] for k in keys_fit])
 
                 try:
                     # Fit model to plots
                     dflt_new, sg=curve_fit(model,x,y,p0=dflt,bounds=bndr)
-                    error=((y - model(x,**model_default))**2).sum() / (len(y)-nprm)
+                    error=((y - model(x,**smodel_default))**2).sum() / (len(y)-nprm)
                 except Exception as err:
                     warnings.warn(f"[{type(err)}] No solution found for {data_type} Model {name} (Nb. param: {nprm}). Return -1.")
                     dflt_new=tuple([-1 for k in dflt]); error=-1
 
                 # Select param default and boundary values
                 for k in range(0,nprm):
-                    model_default[keys_fit[k]]=dflt_new[k]
+                    smodel_default[keys_fit[k]]=dflt_new[k]
 #                     res[s,(name,nprm,keys_fit[k])]=dflt_new[k]
 #                 res[s,(name,nprm,'res')]=error
                     sres[f'{name} {nprm} {keys_fit[k]}']= [ dflt_new[k] ]
