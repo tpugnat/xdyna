@@ -1386,6 +1386,9 @@ or for multiseeds:
 #             self._da=pd.DataFrame(columns=['t','seed', 'da','damin','damax','da low','damin low','damax low', \
 #                                            'da up','damin up','damax up'])
             self._da=pd.DataFrame(columns=['t','seed', 'da low','damin low','damax low','da up','damin up','damax up'])
+#             self._da=pd.DataFrame(columns=['t','seed', 'ang','amp','ang low','amp low', \
+#                                            'ang up','amp up'])
+            self._border=pd.DataFrame(columns=['t','seed', 'ang low','amp low','ang up','amp up'])
             if self.meta.nseeds==0:
                 self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
                 self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
@@ -1944,28 +1947,37 @@ or for multiseeds:
             if 'lower' == data_type[0]:
                 x=np.array(self._lower_davsturns[seed].loc[:,'turn'].values, dtype=float)
                 y=np.array(self._lower_davsturns[seed].loc[:, data_type[1] ].values, dtype=float)
+                lx=[x]; ly=[y]
             elif 'upper' == data_type[0]:
                 x=np.array(self._upper_davsturns[seed].loc[:,'turn'].values, dtype=float)
                 y=np.array(self._upper_davsturns[seed].loc[:, data_type[1] ].values, dtype=float)
+                lx=[x]; ly=[y]
             elif data_type[0] in ['uniform','normal']:
+                row_std=pd.MultiIndex.from_tuples([(data_type[0][:4]+'std',data_type[1],f'{seed}')], 
+                                                  names=["method", "type", "seed"])
+            
                 xdata =np.array(self._lower_davsturns[seed].loc[:,'turn'].values, dtype=float)
                 ylower=np.array(self._lower_davsturns[seed].loc[:, data_type[1] ].values, dtype=float)
                 yupper=np.array(self._upper_davsturns[seed].loc[:, data_type[1] ].values, dtype=float)
                 rturns=(min(xdata),max(xdata))
+                
+                lx=np.empty([ntry,nrand]); ly=np.empty([ntry,nrand])
+                for ii in range(ntry):
+                    xrand=np.floor(10**( (np.log10(rturns[1])-np.log10(rturns[0]))*np.random.uniform(size=[nrand])+np.log10(rturns[0]) )).astype(int)
+                    if 'uniform' == data_type[0]:
+                        yrand=np.random.uniform(size=[nrand])
+                        for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
+                            mask= (xrand>=tmin) & (xrand<tmax)
+                            yrand[mask]=(yup-ylo)*yrand[mask]+ylo
 
-                xrand=np.floor(10**( (np.log10(rturns[1])-np.log10(rturns[0]))*np.random.uniform(size=[nrand])+np.log10(rturns[0]) )).astype(int)
-                if 'uniform' == data_type[0]:
-                    yrand=np.random.uniform(size=[nrand])
-                    for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
-                        mask= (xrand>=tmin) & (xrand<tmax)
-                        yrand[mask]=(yup-ylo)*yrand[mask]+ylo
-
-                elif 'normal' == data_type[0]:
-                    yrand=np.random.normal(loc=0.0,scale=0.5,size=[nrand])
-                    for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
-                        mask= (xrand>=tmin) & (xrand<tmax)
-                        yrand[mask]=(yup-ylo)*(yrand[mask]/nsig+0.5)+ylo
-                x=xrand; y=yrand
+                    elif 'normal' == data_type[0]:
+                        yrand=np.random.normal(loc=0.0,scale=0.5,size=[nrand])
+                        for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
+                            mask= (xrand>=tmin) & (xrand<tmax)
+                            yrand[mask]=(yup-ylo)*(yrand[mask]/nsig+0.5)+ylo
+                    x=xrand; y=yrand
+                    lx[ii,:]=x; ly[ii,:]=y
+                    
             else:
 #                 raise ValueError('data_type must be one of the following form: [lower,upper,uniform,normal]_[min,max,avg]')
                 raise ValueError('data_type must be one of the following form: ([lower,upper,uniform,normal],[min,max,avg]')
@@ -1975,28 +1987,35 @@ or for multiseeds:
             if 'lower' == data_type[0]:
                 x=np.array(self._lower_davsturns.loc[:,'turn'].values, dtype=float)
                 y=np.array(self._lower_davsturns.loc[:, data_type[1] ].values, dtype=float)
+                lx=[x]; ly=[y]
             elif 'upper' == data_type[0]:
                 x=np.array(self._upper_davsturns.loc[:,'turn'].values, dtype=float)
                 y=np.array(self._upper_davsturns.loc[:, data_type[1] ].values, dtype=float)
+                lx=[x]; ly=[y]
             elif data_type[0] in ['uniform','normal']:
+                row_std=pd.MultiIndex.from_tuples([(data_type[0][:4]+'std',data_type[1])], names=["method", "type"])
+            
                 xdata =np.array(self._lower_davsturns.loc[:,'turn'].values, dtype=float)
                 ylower=np.array(self._lower_davsturns.loc[:, data_type[1] ].values, dtype=float)
                 yupper=np.array(self._upper_davsturns.loc[:, data_type[1] ].values, dtype=float)
                 rturns=(min(xdata),max(xdata))
 
-                xrand=np.floor(10**( (np.log10(rturns[1])-np.log10(rturns[0]))*np.random.uniform(size=[nrand])+np.log10(rturns[0]) )).astype(int)
-                if 'uniform' == data_type[0]:
-                    yrand=np.random.uniform(size=[nrand])
-                    for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
-                        mask= (xrand>=tmin) & (xrand<tmax)
-                        yrand[mask]=(yup-ylo)*yrand[mask]+ylo
+                lx=np.empty([ntry,nrand]); ly=np.empty([ntry,nrand])
+                for ii in rangge(ntry):
+                    xrand=np.floor(10**( (np.log10(rturns[1])-np.log10(rturns[0]))*np.random.uniform(size=[nrand])+np.log10(rturns[0]) )).astype(int)
+                    if 'uniform' == data_type[0]:
+                        yrand=np.random.uniform(size=[nrand])
+                        for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
+                            mask= (xrand>=tmin) & (xrand<tmax)
+                            yrand[mask]=(yup-ylo)*yrand[mask]+ylo
 
-                elif 'normal' == data_type[0]:
-                    yrand=np.random.normal(loc=0.0,scale=0.5,size=[nrand])
-                    for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
-                        mask= (xrand>=tmin) & (xrand<tmax)
-                        yrand[mask]=(yup-ylo)*(yrand[mask]/nsig+0.5)+ylo
-                x=xrand; y=yrand
+                    elif 'normal' == data_type[0]:
+                        yrand=np.random.normal(loc=0.0,scale=0.5,size=[nrand])
+                        for tmax,tmin,ylo,yup in zip(xdata[0:-1],xdata[1:],ylower[1:],yupper[1:]):
+                            mask= (xrand>=tmin) & (xrand<tmax)
+                            yrand[mask]=(yup-ylo)*(yrand[mask]/nsig+0.5)+ylo
+                    x=xrand; y=yrand
+                    lx[ii,:]=x; ly[ii,:]=y
             else:
                 raise ValueError('data_type must be one of the following form: [lower,upper,uniform,normal]_[min,max,avg]')
             
@@ -2005,8 +2024,14 @@ or for multiseeds:
 
         # Manage duplicate analysis
         if not force and self._da_model is not None:
-            col=(name,nb_param,'res')
-            if self._da_model.index.isin([row[-1]]).any() and self._da_model.columns.isin([col]).any() and \
+            # Multicolumns
+#             col=(name,nb_param,'res')
+#             if self._da_model.index.isin([row[-1]]).any() and self._da_model.columns.isin([col]).any() and \
+#             not np.isnan(self._da_model.loc[row[-1],col]) and self._da_model.loc[row[-1],col]>0:
+                
+            # Multicolumns
+            col=f'{name} {nb_param} res'
+            if self._da_model.index.isin([row[-1]]).any() and any(self._da_model.columns==col) and \
             not np.isnan(self._da_model.loc[row[-1],col]) and self._da_model.loc[row[-1],col]>0:
 #                 if self.meta.nseeds!=0:
 #                     print(f'Skip {data_type} Model {name} (Nb. param: {nb_param}) for seed {seed}')
@@ -2019,30 +2044,49 @@ or for multiseeds:
             print(f'Running {data_type} Model {name} (Nb. param: {nb_param})')
 
         # Fit the model
-        keys=np.array([k for k in model_boundary.keys()]); res={}
-        for nprm in range(1,min(nb_param,len(keys))+1):
-            # Select param default and boundary values
-            keys_fit=keys[:nprm]
-            dflt=tuple([model_default[k]  for k in keys_fit])
-            bndr=([model_boundary[k][0] for k in keys_fit],[model_boundary[k][1] for k in keys_fit])
+        keys=np.array([k for k in model_boundary.keys()])
+#         res=pd.DataFrame(index=range(len(lx)))
+        res=pd.DataFrame()
+        for s,(x,y) in enumerate(zip(lx,ly)):
+            sres={}
+            for nprm in range(1,min(nb_param,len(keys))+1):
+                # Select param default and boundary values
+                keys_fit=keys[:nprm]
+                dflt=tuple([model_default[k]  for k in keys_fit])
+                bndr=([model_boundary[k][0] for k in keys_fit],[model_boundary[k][1] for k in keys_fit])
 
-            try:
-                # Fit model to plots
-                dflt_new, sg=curve_fit(model,x,y,p0=dflt,bounds=bndr)
-                error=((y - model(x,**model_default))**2).sum() / (len(y)-nprm)
-            except Exception as err:
-                warnings.warn(f"[{type(err)}] No solution found for {data_type} Model {name} (Nb. param: {nprm}). Return -1.")
-                dflt_new=tuple([-1 for k in dflt]); error=-1
-                
-            # Select param default and boundary values
-            for k in range(0,nprm):
-                model_default[keys_fit[k]]=dflt_new[k]
-                res[(name,nprm,keys_fit[k])]=[dflt_new[k]]
-            res[(name,nprm,'res')]=[ error ]
+                try:
+                    # Fit model to plots
+                    dflt_new, sg=curve_fit(model,x,y,p0=dflt,bounds=bndr)
+                    error=((y - model(x,**model_default))**2).sum() / (len(y)-nprm)
+                except Exception as err:
+                    warnings.warn(f"[{type(err)}] No solution found for {data_type} Model {name} (Nb. param: {nprm}). Return -1.")
+                    dflt_new=tuple([-1 for k in dflt]); error=-1
+
+                # Select param default and boundary values
+                for k in range(0,nprm):
+                    model_default[keys_fit[k]]=dflt_new[k]
+#                     res[s,(name,nprm,keys_fit[k])]=dflt_new[k]
+#                 res[s,(name,nprm,'res')]=error
+                    sres[f'{name} {nprm} {keys_fit[k]}']= [ dflt_new[k] ]
+                sres[f'{name} {nprm} res']= [ error ]
+            if res.empty:
+                res=pd.DataFrame(sres)
+            else:
+                res=pd.concat([res,pd.DataFrame(sres)], ignore_index=True)
+#                     res[s,(name,nprm,keys_fit[k])]=[dflt_new[k]]
+#                 res[s,(name,nprm,'res')]=[ error ]
             
         # Save results
-        res=pd.DataFrame(res,index=row)
-        res.columns.names=["model", "nprm", "key"]
+        if len(res)>1:
+            res_avg=pd.DataFrame(res.mean()).T; res_avg.index=row
+            res_std=pd.DataFrame(res.std()).T; res_std.index=row_std
+#             res=res_avg
+#             res.index=row
+            res=pd.concat([res_avg,res_std])
+        else:
+            res.index=row
+#         res.columns.names=["model", "nprm", "key"]
         if self._da_model is None:
             self._da_model=res
         elif not self._da_model.index.isin([res.index[-1]]).any():
@@ -2050,7 +2094,8 @@ or for multiseeds:
         elif not self._da_model.columns.isin([res.columns[-1]]).any():
             self._da_model=pd.concat([self._da_model,res],axis=1)
         else:
-            self._da_model.loc[row[0],res.columns]=res.loc[row[0],res.columns]
+            for row in res.index:
+                self._da_model.loc[row,res.columns]=res.loc[row,res.columns]
             
         if save:
             self._da_model=self._da_model.fillna(-1)
@@ -2143,8 +2188,13 @@ or for multiseeds:
             row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1],str(seed))], names=["method", "type", "seed"])
         else:
             row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1])], names=["method", "type"])
-        param={k:self._da_model.loc[row[0],(name,nb_parm,k)] for k in keys}
-        return model, param, self._da_model.loc[row[0],(name,nb_parm,'res')]
+        # Multicolumns
+#         param={k:self._da_model.loc[row[0],(name,nb_parm,k)] for k in keys}
+#         return model, param, self._da_model.loc[row[0],(name,nb_parm,'res')]
+
+        # String columns
+        param={k:self._da_model.loc[row[0],f'{name} {nb_parm} {k}'] for k in keys}
+        return model, param, self._da_model.loc[row[0],f'{name} {nb_parm} res']
             
     
                 
@@ -2360,10 +2410,10 @@ or for multiseeds:
                 else:
                     self._da_model = pd.read_parquet(pf, engine="pyarrow")
                 # Change columns format in order to be saved/loaded
-                col=[c.split() for c in self._da_model.columns]
-                for ii in range(len(col)):
-                    col[ii][1]=int(col[ii][1])
-                self._da_model.columns=pd.MultiIndex.from_tuples(col,names=['model', 'nprm', 'key'])
+#                 col=[c.split() for c in self._da_model.columns]
+#                 for ii in range(len(col)):
+#                     col[ii][1]=int(col[ii][1])
+#                 self._da_model.columns=pd.MultiIndex.from_tuples(col,names=['model', 'nprm', 'key'])
             else:
                 raise NotImplementedError
         else:
@@ -2374,8 +2424,8 @@ or for multiseeds:
             if self.meta.db_extension=='parquet':
                 self._da_model.fillna(0)
                 # Change columns format in order to be saved/loaded
-                save_col=self._da_model.columns.copy()
-                self._da_model.columns=[f'{c[0]} {c[1]} {c[2]}' for c in self._da_model.columns]
+#                 save_col=self._da_model.columns.copy()
+#                 self._da_model.columns=[f'{c[0]} {c[1]} {c[2]}' for c in self._da_model.columns]
                 if pf is None:
                     with ProtectFile(self.meta.da_model_file, 'wb', wait=_db_access_wait_time) as pf:
                         self._da_model.to_parquet(pf, index=True, engine="pyarrow")
@@ -2384,7 +2434,7 @@ or for multiseeds:
                     pf.seek(0)      # Move file pointer to start of file
                     self._da_model.to_parquet(pf, index=True, engine="pyarrow")
                 # Change columns format in order to be saved/loaded
-                self._da_model.columns=save_col
+#                 self._da_model.columns=save_col
             else:
                 raise NotImplementedError
             
@@ -2453,6 +2503,25 @@ def get_da_evo_radial(files):
     data = pd.concat([ pd.read_csv(file) for file in files ])
     return _calculate_radial_evo(_get_raw_da_radial(data))
 # --------------------------------------------------------
+
+
+
+
+def concat(seed,t,df1,df2):
+    short_df1=df1.loc[(df1['seed']==seed) & (df1['t']==t),:].reset_index()
+    short_df2=df2.dropna(axis=1)
+    if ac.empty:
+        print('cas empty')
+        return pd.concat([df1,df2], ignore_index=True)
+    else:
+        print('cas not empty')
+        am=[aa for aa in df1.columns if aa not in bc.columns]
+        c=pd.DataFrame(index=range(max([len(short_df1),len(df2)])),columns=df1.columns)
+        c.loc[0:len(short_df1),am]=short_df1.loc[:,am]
+        c.loc[0:len(short_df2),short_df2.columns]=short_df2
+        c['seed']=seed; c['t']=t
+
+        return pd.concat([df1.loc[df1[6]!=seed,:],c], ignore_index=True)
     
     
     
