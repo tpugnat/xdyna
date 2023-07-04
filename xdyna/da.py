@@ -2508,21 +2508,46 @@ def get_da_evo_radial(files):
 
 
 
-def concat(seed,t,df1,df2):
-    short_df1=df1.loc[(df1['seed']==seed) & (df1['t']==t),:].reset_index()
-    short_df2=df2.dropna(axis=1)
-    if ac.empty:
-        print('cas empty')
-        return pd.concat([df1,df2], ignore_index=True)
-    else:
-        print('cas not empty')
-        am=[aa for aa in df1.columns if aa not in bc.columns]
-        c=pd.DataFrame(index=range(max([len(short_df1),len(df2)])),columns=df1.columns)
-        c.loc[0:len(short_df1),am]=short_df1.loc[:,am]
-        c.loc[0:len(short_df2),short_df2.columns]=short_df2
-        c['seed']=seed; c['t']=t
 
-        return pd.concat([df1.loc[df1[6]!=seed,:],c], ignore_index=True)
+
+# --------------------------------------------------------
+def concat(df1,df2, **kwargs):
+    # Check if line exist in df1
+    msk=np.array([(df1[kk]==vv) for kk,vv in kwargs.items()]).sum(axis=0) ==len(kwargs)
+    # Check if df2  columnn ot in df1
+    newcol=[cc for cc in df2.columns if cc not in df1.columns]
+    
+    df2_srt=df2.dropna(axis=1, how='all')
+    
+    df1_tbs=df1.loc[~msk,:]
+    df1_tbm=df1.loc[ msk,[cc for cc in df1.columns if cc not in kwargs.keys() and cc not in df2_srt.columns]]
+    df1_tbm=df1_tbm.dropna(axis=0, how='all')
+    
+    if df1_tbm.empty:
+        # Merge the 2 DataFrame
+        for kk,vv in kwargs.items():
+            df2_srt[kk]=vv
+        return pd.concat([df1_tbs,df2_srt], ignore_index=True)
+    else:
+        col=np.concatenate([df1.columns,newcol])
+        ldf1_tbm=len(df1_tbm)
+        ldf2_srt=len(df2_srt)
+        # Merge the 2 DataFrame
+        dfn_tbm=pd.DataFrame(index=range(max(ldf1_tbm,ldf2_srt)), columns=col)
+        dfn_tbm.loc[:ldf1_tbm,df1_tbm.columns]=df1_tbm.values
+        dfn_tbm.loc[:ldf2_srt,df2_srt.columns]=df2_srt.values
+        
+        for kk,vv in kwargs.items():
+            dfn_tbm[kk]=vv
+        return pd.concat([df1_tbs,dfn_tbm], ignore_index=True)
+    
+    
+    
+def select_rows(df, **kwargs):
+    # Check if line exist in df
+    msk=np.array([(df[kk]==vv) for kk,vv in kwargs.items()]).sum(axis=0) == len(kwargs)
+    return df.loc[msk,:]
+# --------------------------------------------------------
     
     
     
