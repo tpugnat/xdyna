@@ -2194,7 +2194,7 @@ or for multiseeds:
 #         return model, param, self._da_model.loc[row[0],(name,nb_parm,'res')]
 
         # String columns
-        param={k:self._da_model.loc[row[0],f'{name} {nb_parm} {k}'] for k in keys}
+        param={k:self._da_model.loc[row[0],f'{name} {nb_parm} {k}'] for k in keys[:nb_parm]}
         return model, param, self._da_model.loc[row[0],f'{name} {nb_parm} res']
             
     
@@ -2534,7 +2534,7 @@ def concat(seed,t,df1,df2):
 
 # Function loading SixDesk/SixDB outputs into XDyna
 # --------------------------------------------------------
-def load_sixdesk_output(path, study, load_line=False): # TODO: Add reference emitance, if emittance difference from file inform that if BB some results will be wrong
+def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add reference emitance, if emittance difference from file inform that if BB some results will be wrong
     ## SIXDESK
     ## -----------------------------------
     # Load meta
@@ -2643,6 +2643,10 @@ def load_sixdesk_output(path, study, load_line=False): # TODO: Add reference emi
         sixdb_da.meta.ang_min = 0
         sixdb_da.meta.ang_max = 90
         sixdb_da.meta.npart = len(sixdb_da._surv.index)
+        
+        if nemit is not None:
+            warnings.warn(f"A renormalisation of emmitances is applyed ({sixdb_da.nemitt_x} -> {nemit}). This might lead to error in the analysis.")
+            self.update_emittance(nemit, update_surv=True)
     
     sixdb_da.meta._store()
     return sixdb_da

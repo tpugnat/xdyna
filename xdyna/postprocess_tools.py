@@ -144,8 +144,8 @@ Model_2_boundary ={'rho':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]}
 
 def Model_2b(N, btilde=1, K=1, N0=1, B=1):   # Eq. 35a
     return btilde / ( B*np.log(N/N0) )**K      
-Model_2b_default ={'btilde':1, 'K':1, 'N0':1, 'B':1}
-Model_2b_boundary={'btilde':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf], 'B':[1e-10,1e5]}
+Model_2b_default ={'btilde':1, 'K':1, 'N0':1} #, 'B':1}
+Model_2b_boundary={'btilde':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]} #, 'B':[1e-10,1e5]}
 
 def Model_2n(N, b=1, K=1, N0=1):             # Eq. 2 from Frederik
     return b / ( np.log(N/N0) )**K      
@@ -156,13 +156,13 @@ Model_2n_boundary={'b':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]}
 
 def Model_4(N, rho=1, K=1, lmbd=0.5):        # Eq. 23
     return rho / ( -(2*np.exp(1)*lmbd) * np.real(W( (-1/(2*np.exp(1)*lmbd)) * (rho/6)**(1/K) * (8*N/7)**(-1/(lmbd*K)) ,k=-1)) )**K  
-Model_4_default  ={'rho':1, 'K':1, 'lmbd':0.5}
-Model_4_boundary ={'rho':[1e-10,1e10], 'K':[0.01,2], 'lmbd':[1e-10,1e10]}
+Model_4_default  ={'rho':1, 'K':1} #, 'lmbd':0.5
+Model_4_boundary ={'rho':[1e-10,1e10], 'K':[0.01,2]} #, 'lmbd':[1e-10,1e10]}
 
 def Model_4b(N, btilde=1, K=1, N0=1, B=1):   # Eq. 35c
     return btilde / (-(0.5*K*B) * np.real(W( (-2/(K*B)) * (N/N0)**(-2/K) ,k=-1)) )**K  
-Model_4b_default ={'btilde':1, 'K':1, 'N0':1, 'B':1}
-Model_4b_boundary={'btilde':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf], 'B':[1e-10,1e10]}
+Model_4b_default ={'btilde':1, 'K':1, 'N0':1} #, 'B':1}
+Model_4b_boundary={'btilde':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]} #, 'B':[1e-10,1e10]}
 
 def Model_4n(N, rho=1, K=1, mu=1):           # Eq. 4 from Frederik
     return rho / (- np.real(W( (mu*N)**(-2/K) ,k=-1)) )**K  
