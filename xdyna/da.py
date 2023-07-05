@@ -79,7 +79,7 @@ class DA:
         # Initialise DA data
         self.memory_threshold = kwargs.pop('memory_threshold', 1e9)
         self._surv = None
-        self._t_steps = None
+#         self._t_steps = None
         self._da = None
         self._border = None
         self._lower_davsturns = None
@@ -1206,7 +1206,14 @@ class DA:
 
     @property
     def t_steps(self):
-        return self._t_steps
+        if self.survival_data is None:
+            raise ValueError('Run the simulation before using plot_particles.')
+        data=self.survival_data
+        
+        if self.meta.nseeds == 0:
+            return {0: np.unique(data['nturns'].values)}
+        else:
+            return {s: np.unique(data.loc[data['seed']==s,'nturns'].values) for s in range(1,self.meta.nseeds+1)}
 
     def da(self, t=None, seed=None):
         return self._get_da_prop(t=t, seed=seed, prop='DA')
@@ -2079,7 +2086,7 @@ or for multiseeds:
 #                 res[s,(name,nprm,'res')]=[ error ]
             
         # Save results
-        if len(res)>1:
+        if data_type[0] in ['uniform','normal']:
             res_avg=pd.DataFrame(res.mean()).T; res_avg.index=row
             res_std=pd.DataFrame(res.std()).T; res_std.index=row_std
 #             res=res_avg
