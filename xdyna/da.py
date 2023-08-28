@@ -1099,7 +1099,7 @@ class DA:
                 delta   = self._surv.loc[part_ids_seed, 'delta_in'].to_numpy()
 
                 self._append_job_log('output', datetime.datetime.now().isoformat() + '  Start tracking job ' + str(job_id) + '.', logging=logging)
-                part=track_per_seed(context,self.line[seed].tracker,
+                part=track_per_seed(context,self.line[seed],
                                     x_norm, y_norm, px_norm, py_norm, zeta, delta, 
                                     self.nemitt_x, self.nemitt_y, self.meta.max_turns)
 
@@ -1243,28 +1243,28 @@ class DA:
         return self._get_da_prop(t=t, seed=seed, prop='DAmax upper')
 
     def border(self, t=None, seed=None):
-        x = self._get_da_prop(t=t, seed=seed, prop='x', data=self._border, \
+        ang = self._get_da_prop(t=t, seed=seed, prop='ang', data=self._border, \
                               enforce_single=False)
-        y = self._get_da_prop(t=t, seed=seed, prop='y', data=self._border, \
+        amp = self._get_da_prop(t=t, seed=seed, prop='amp', data=self._border, \
                               enforce_single=False)
         # TODO: 4D, 5D, 6D ...
-        return [x, y]
+        return [ang, amp]
 
     def border_lower(self, t=None, seed=None):
-        x = self._get_da_prop(t=t, seed=seed, prop='x lower', data=self._border, \
+        ang = self._get_da_prop(t=t, seed=seed, prop='ang lower', data=self._border, \
                               enforce_single=False)
-        y = self._get_da_prop(t=t, seed=seed, prop='y lower', data=self._border, \
+        amp = self._get_da_prop(t=t, seed=seed, prop='amp lower', data=self._border, \
                               enforce_single=False)
         # TODO: 4D, 5D, 6D ...
-        return [x, y]
+        return [ang, amp]
 
     def border_upper(self, t=None, seed=None):
-        x = self._get_da_prop(t=t, seed=seed, prop='x upper', data=self._border, \
+        ang = self._get_da_prop(t=t, seed=seed, prop='ang upper', data=self._border, \
                               enforce_single=False)
-        y = self._get_da_prop(t=t, seed=seed, prop='y upper', data=self._border, \
+        amp = self._get_da_prop(t=t, seed=seed, prop='amp upper', data=self._border, \
                               enforce_single=False)
         # TODO: 4D, 5D, 6D ...
-        return [x, y]
+        return [ang, amp]
 
     def _get_da_prop(self, t, seed, prop, data=None, enforce_single=True):
         ss = "" if seed is None else f"and seed {seed}"
@@ -1390,12 +1390,12 @@ or for multiseeds:
             at_turn=self.max_turns
             
         if self._da is None:
-#             self._da=pd.DataFrame(columns=['t','seed', 'da','damin','damax','da low','damin low','damax low', \
-#                                            'da up','damin up','damax up'])
-            self._da=pd.DataFrame(columns=['t','seed', 'da low','damin low','damax low','da up','damin up','damax up'])
+#             self._da=pd.DataFrame(columns=['t','seed', 'DA','DAmin','DAmax','DA low','DAmin low','DAmax low', \
+#                                            'DA up','DAmin up','DAmax up'])
+            self._da=pd.DataFrame(columns=['t','seed', 'DA lower','DAmin lower','DAmax lower','DA upper','DAmin upper','DAmax upper'])
 #             self._da=pd.DataFrame(columns=['t','seed', 'ang','amp','ang low','amp low', \
 #                                            'ang up','amp up'])
-            self._border=pd.DataFrame(columns=['t','seed', 'ang low','amp low','ang up','amp up'])
+            self._border=pd.DataFrame(columns=['t','seed', 'ang lower','amp lower','ang upper','amp upper'])
             if self.meta.nseeds==0:
                 self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
                 self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
@@ -1432,8 +1432,8 @@ or for multiseeds:
 
 #             # Detect range to look at the DA border
 #             losses =data.nturns<at_turn
-#             loss=data.loc[ losses,:]; min_loss=min(loss.amplitude)
-#             surv=data.loc[~losses,:]; max_surv=max(surv.amplitude)
+#             loss=data.loc[ losses,:]; min_loss=min(loss['amplitude'])
+#             surv=data.loc[~losses,:]; max_surv=max(surv['amplitude'])
 #             min_amplitude = min([min_loss,max_surv])-2
 #             max_amplitude = max([min_loss,max_surv])+2
 
@@ -1446,36 +1446,36 @@ or for multiseeds:
 
 #                 # Identify losses and surviving particles
 #                 losses =section.nturns<at_turn
-#                 section_loss=section.loc[ losses,:]; section_loss=section_loss.loc[section_loss.amplitude<=max_amplitude,:]
-#                 section_surv=section.loc[~losses,:]; section_surv=section_surv.loc[section_surv.amplitude>=min_amplitude,:]
+#                 section_loss=section.loc[ losses,:]; section_loss=section_loss.loc[section_loss['amplitude']<=max_amplitude,:]
+#                 section_surv=section.loc[~losses,:]; section_surv=section_surv.loc[section_surv['amplitude']>=min_amplitude,:]
 
 #                 # Detect DA boundary
 #                 if not section_loss.empty and not section_surv.empty:
-#                     min_amplitude_loss=min(section_loss.amplitude)
+#                     min_amplitude_loss=min(section_loss['amplitude'])
 #                     border_max['amplitude'].append(min_amplitude_loss)
-#                     border_max['angle'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'angle'].values[0])
-#                     border_max['id'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'id'].values[0])
+#                     border_max['angle'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'angle'].values[0])
+#                     border_max['id'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'id'].values[0])
 
-#                     mask = section_surv.amplitude<min_amplitude_loss
+#                     mask = section_surv['amplitude']<min_amplitude_loss
 #                     if any(mask):
-#                         max_amplitude_surv=max(section_surv.amplitude[mask])
+#                         max_amplitude_surv=max(section_surv['amplitude'][mask])
 
 #                         border_min['amplitude'].append(max_amplitude_surv)
-#                         border_min['angle'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'angle'].values[0])
-#                         border_min['id'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'id'].values[0])
+#                         border_min['angle'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'angle'].values[0])
+#                         border_min['id'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'id'].values[0])
                         
 #                 elif not section_loss.empty:
-#                     min_amplitude_loss=min(section_loss.amplitude)
+#                     min_amplitude_loss=min(section_loss['amplitude'])
 #                     border_max['amplitude'].append(min_amplitude_loss)
-#                     border_max['angle'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'angle'].values[0])
-#                     border_max['id'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'id'].values[0])
+#                     border_max['angle'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'angle'].values[0])
+#                     border_max['id'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'id'].values[0])
                     
 #                 elif not section_surv.empty:
-#                     max_amplitude_surv=max(section_surv.amplitude)
+#                     max_amplitude_surv=max(section_surv['amplitude'])
 
 #                     border_min['amplitude'].append(max_amplitude_surv)
-#                     border_min['angle'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'angle'].values[0])
-#                     border_min['id'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'id'].values[0])
+#                     border_min['angle'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'angle'].values[0])
+#                     border_min['id'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'id'].values[0])
 
 #             border_max=pd.DataFrame(border_max)
 #             border_min=pd.DataFrame(border_min)
@@ -1487,90 +1487,111 @@ or for multiseeds:
                 surv=data.loc[~losses,:]
 
                 # Check if losses lower than upper DA boundary, add those to max DA boundary
-                border_max_fit=fit_DA(border_max.angle, border_max.amplitude, angle_range=ang_range)
-                loss_in_DA_max = loss.loc[loss.amplitude< border_max_fit(loss.angle),:]
+                border_max_fit=fit_DA(border_max['angle'], border_max['amplitude'], ang_range)
+                loss_in_DA_max = loss.loc[loss['amplitude']< border_max_fit(loss['angle']),:]
                 if not loss_in_DA_max.empty:
                     border_max=pd.concat([border_max,loss_in_DA_max])
 
                 # Check if lower DA boundary cross upper DA boundary, remove problematic dot from lower DA boundary
-                border_max_fit=fit_DA(border_max.angle, border_max.amplitude, angle_range=ang_range)
-                border_min=border_min.loc[border_min.amplitude<border_max_fit(border_min.angle),:]
+                border_max_fit=fit_DA(border_max['angle'], border_max['amplitude'], ang_range)
+                border_min=border_min.loc[border_min['amplitude']<border_max_fit(border_min['angle']),:]
 
                 # Check if losses lower than min DA boundary
-                border_min_fit=fit_DA(border_min.angle, border_min.amplitude, angle_range=ang_range)
-                pb_border_max=border_max.loc[border_max.amplitude<=border_min_fit(border_max.angle),:]
+                border_min_fit=fit_DA(border_min['angle'], border_min['amplitude'], ang_range)
+                pb_border_max=border_max.loc[border_max['amplitude']<=border_min_fit(border_max['angle']),:]
                 while not pb_border_max.empty:
                     for idx,ploss in pb_border_max.iterrows():
-                        border_min_fit=fit_DA(border_min.angle, border_min.amplitude, angle_range=ang_range)
+                        border_min_fit=fit_DA(border_min['angle'], border_min['amplitude'], ang_range)
                         
-                        if ploss.amplitude <= border_min_fit(ploss.angle):
-                            lower=border_min.loc[border_min.angle==max(border_min.angle[border_min.angle<ploss.angle]),:]
-                            upper=border_min.loc[border_min.angle==min(border_min.angle[border_min.angle>ploss.angle]),:]
-                            lower_amp=lower.amplitude.tolist()[0] ; lower_ang=lower.angle.tolist()[0]
-                            upper_amp=upper.amplitude.tolist()[0] ; upper_ang=upper.angle.tolist()[0]
+                        if ploss['amplitude'] <= border_min_fit(ploss['angle']):
+                            lower=border_min.loc[border_min['angle']==max(border_min['angle'][border_min['angle']<ploss['angle']]),:]
+                            upper=border_min.loc[border_min['angle']==min(border_min['angle'][border_min['angle']>ploss['angle']]),:]
+                            lower_amp=lower['amplitude'].tolist()[0] ; lower_ang=lower['angle'].tolist()[0]
+                            upper_amp=upper['amplitude'].tolist()[0] ; upper_ang=upper['angle'].tolist()[0]
                             
                             # Remove lower border point too high for the losses
                             if lower_amp < upper_amp:
                                 border_min.drop(index=upper.index.values, inplace=True)
-                                upper=border_min.loc[border_min.angle==min(border_min.angle[border_min.angle>ploss.angle]),:]
-                                upper_amp=upper.amplitude.tolist()[0] ; upper_ang=upper.angle.tolist()[0]
+                                upper=border_min.loc[border_min['angle']==min(border_min['angle'][border_min['angle']>ploss['angle']]),:]
+                                upper_amp=upper['amplitude'].tolist()[0] ; upper_ang=upper['angle'].tolist()[0]
                                 
                             else:
                                 border_min.drop(index=lower_amp, inplace=True)
-                                lower=border_min.loc[border_min.angle==max(border_min.angle[border_min.angle<ploss.angle]),:]
-                                lower_amp=lower.amplitude.tolist()[0] ; lower_ang=lower.angle.tolist()[0]
+                                lower=border_min.loc[border_min['angle']==max(border_min['angle'][border_min['angle']<ploss['angle']]),:]
+                                lower_amp=lower['amplitude'].tolist()[0] ; lower_ang=lower['angle'].tolist()[0]
                                 
                             # Add surv particle to lower border point near the previous part was removed
-                            candidate=surv.loc[(surv.angle<upper_ang) & (surv.angle>lower_ang) & (surv.amplitude<ploss.amplitude),['id','angle','amplitude']]
+                            candidate=surv.loc[(surv['angle']<upper_ang) & (surv['angle']>lower_ang) & (surv['amplitude']<ploss['amplitude']),['id','angle','amplitude']]
                             if not candidate.empty:
                                 border_min=pd.concat([ border_min,candidate.loc[[candidate.idxmax()["amplitude"]],:]])
 
-                    border_min_fit=fit_DA(border_min.angle, border_min.amplitude, angle_range=ang_range)
-                    pb_border_max=border_max.loc[border_max.amplitude<=border_min_fit(border_max.angle),:]
+                    border_min_fit=fit_DA(border_min['angle'], border_min['amplitude'], ang_range)
+                    pb_border_max=border_max.loc[border_max['amplitude']<=border_min_fit(border_max['angle']),:]
 
                 # Smooth DA
                 if smoothing:
                     border_min,border_max=_da_smoothing(data,border_min,border_max,at_turn=at_turn)
         
             # Save and return DA
-#             if self.meta.nseeds==0:
-#                 row=f'{at_turn}'
-#             else:
-            row=f'{at_turn} s{seed}'
-            self._da.loc[row,'seed']     = seed
-            self._da.loc[row,'t']        = at_turn
-            self._da.loc[row,'da low']   = compute_da_1D(border_min.angle, border_min.amplitude,ang_range)
-            self._da.loc[row,'damin low']= min(border_min.amplitude)
-            self._da.loc[row,'damax low']= max(border_min.amplitude)
-            self._da.loc[row,'da up']    = compute_da_1D(border_max.angle, border_max.amplitude,ang_range)
-            self._da.loc[row,'damin up'] = min(border_max.amplitude)
-            self._da.loc[row,'damax up'] = max(border_max.amplitude)
+            if self.meta.nseeds==0:
+                row=f't{at_turn}'
+            else:
+                row=f't{at_turn} s{seed}'
+            new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
+                                 'DAmin lower': [min(border_min['amplitude'])],
+                                 'DAmax lower': [max(border_min['amplitude'])],
+                                 'DA upper':    [compute_da_1D(border_max['angle'], border_max['amplitude'], ang_range)],
+                                 'DAmin upper': [min(border_max['amplitude'])],
+                                 'DAmax upper': [max(border_max['amplitude'])]
+                                })
+            self._da=concat(self._da,new_da,seed=seed,t=at_turn)
+            
+#             border_min['seed']=seed; border_min['t']=at_turn;
+            self._border=concat(self._border,
+                                border_min.rename(columns={'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, 
+                                                  inplace=False),
+                                seed=seed,t=at_turn)
+            
+#             border_max['seed']=seed; border_max['t']=at_turn;
+            self._border=concat(self._border,
+                                border_max.rename(columns={'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, 
+                                                  inplace=False),
+                                seed=seed,t=at_turn)
+    
+#             self._da.loc[row,'seed']= seed
+#             self._da.loc[row,'t']   = at_turn
+#             self._da.loc[row,'DA lower']   = compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
+#             self._da.loc[row,'DAmin lower']= min(border_min['amplitude'])
+#             self._da.loc[row,'DAmax lower']= max(border_min['amplitude'])
+#             self._da.loc[row,'DA upper']   = compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
+#             self._da.loc[row,'DAmin upper']= min(border_max['amplitude'])
+#             self._da.loc[row,'DAmax upper']= max(border_max['amplitude'])
                 
             if self.meta.nseeds==0:
                 self._lower_davsturns.loc[at_turn,'turn'  ]=at_turn
                 self._lower_davsturns.loc[at_turn,'border']=[ border_min ]
-                self._lower_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_min.angle, border_min.amplitude,ang_range)
-                self._lower_davsturns.loc[at_turn,'min'   ]=min(border_min.amplitude)
-                self._lower_davsturns.loc[at_turn,'max'   ]=max(border_min.amplitude)
+                self._lower_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
+                self._lower_davsturns.loc[at_turn,'min'   ]=min(border_min['amplitude'])
+                self._lower_davsturns.loc[at_turn,'max'   ]=max(border_min['amplitude'])
                 
                 self._upper_davsturns.loc[at_turn,'turn'  ]=at_turn
                 self._upper_davsturns.loc[at_turn,'border']=[ border_max ]
-                self._upper_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_max.angle, border_max.amplitude,ang_range)
-                self._upper_davsturns.loc[at_turn,'min'   ]=min(border_max.amplitude)
-                self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max.amplitude)
+                self._upper_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
+                self._upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
+                self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max['amplitude'])
             else:
                 
                 self._lower_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
                 self._lower_davsturns[seed].loc[at_turn,'border']=[ border_min ]
-                self._lower_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_min.angle,border_min.amplitude,ang_range)
-                self._lower_davsturns[seed].loc[at_turn,'min'   ]=min(border_min.amplitude)
-                self._lower_davsturns[seed].loc[at_turn,'max'   ]=max(border_min.amplitude)
+                self._lower_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
+                self._lower_davsturns[seed].loc[at_turn,'min'   ]=min(border_min['amplitude'])
+                self._lower_davsturns[seed].loc[at_turn,'max'   ]=max(border_min['amplitude'])
                 
                 self._upper_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
                 self._upper_davsturns[seed].loc[at_turn,'border']=[ border_max ]
-                self._upper_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_max.angle,border_max.amplitude,ang_range)
-                self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max.amplitude)
-                self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max.amplitude)
+                self._upper_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
+                self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
+                self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
         sys.stdout.write(f'\rComputing DA at turn {at_turn} succesfully end!\n')
         
         
@@ -1667,7 +1688,7 @@ or for multiseeds:
                 else:
                     lower_davsturns=self._lower_davsturns[seed+1]
                     upper_davsturns=self._upper_davsturns[seed+1]
-#                 ang_range=(min(data.angle),max(data.angle))
+#                 ang_range=(min(data['angle']),max(data['angle']))
 
                 # Get list of turn to 
                 lturns=np.sort(np.unique(bin_size*np.floor(data.nturns/bin_size)))
@@ -1677,7 +1698,7 @@ or for multiseeds:
 
                 
                 border_min=lower_davsturns.loc[to_turn,'border'][0]
-                DA_lim_max=max(upper_davsturns.loc[to_turn,'border'][0].amplitude)
+                DA_lim_max=max(upper_davsturns.loc[to_turn,'border'][0]['amplitude'])
                 upper_notmonotonius=False
                 da=lower_davsturns.loc[to_turn,'avg']
                 removed=pd.DataFrame(columns=data.columns)
@@ -1687,14 +1708,14 @@ or for multiseeds:
 
                     # Regenerate the upper da border and detect lower da limit
                     losses=data.nturns<at_turn
-                    loss=data.loc[ losses,:]; min_loss=min(loss.amplitude)
-                    surv=data.loc[~losses,:]; max_surv=max(surv.amplitude)
+                    loss=data.loc[ losses,:]; min_loss=min(loss['amplitude'])
+                    surv=data.loc[~losses,:]; max_surv=max(surv['amplitude'])
                     max_amplitude = max([min_loss,max_surv])+2
-                    raw_border_max=loss.loc[loss.amplitude<=max_amplitude,['id','angle','amplitude']]
+                    raw_border_max=loss.loc[loss['amplitude']<=max_amplitude,['id','angle','amplitude']]
 
                     # Check if DA border cross each others
-                    fit_max=fit_DA(raw_border_max.angle, raw_border_max.amplitude, ang_range)
-                    check_boundary_cross=raw_border_min.loc[raw_border_min.amplitude>=fit_max(raw_border_min.angle)]
+                    fit_max=fit_DA(raw_border_max['angle'], raw_border_max['amplitude'], ang_range)
+                    check_boundary_cross=raw_border_min.loc[raw_border_min['amplitude']>=fit_max(raw_border_min['angle'])]
 
                     # Recheck previous turns
                     if not check_boundary_cross.empty and self.da_type in ['monte_carlo', 'free']:
@@ -1706,13 +1727,13 @@ or for multiseeds:
                             surv_rc=data.loc[data.nturns>=rc,:]
                             raw_border_min=lower_davsturns.loc[rc,'border'][0]
                             raw_border_max=upper_davsturns.loc[rc,'border'][0]
-                            raw_border_min=raw_border_min.loc[raw_border_min.amplitude<fit_max(raw_border_min.angle),:]
+                            raw_border_min=raw_border_min.loc[raw_border_min['amplitude']<fit_max(raw_border_min['angle']),:]
                             new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,removed=removed,
                                                                         at_turn=rc,DA_lim_min=new_DA_lim_min,
                                                                         active_warmup=False)
 
-                            new_da=compute_da_1D(new_border_min.angle,new_border_min.amplitude,ang_range)
-                            new_DA_lim_min=min(new_border_min.amplitude)
+                            new_da=compute_da_1D(new_border_min['angle'],new_border_min['amplitude'],ang_range)
+                            new_DA_lim_min=min(new_border_min['amplitude'])
 
                             # Check if DA decrease with the turns
                             if new_da>=da:
@@ -1721,28 +1742,28 @@ or for multiseeds:
 
                             # Save DA
                             lower_davsturns.loc[rc,'border']=[ border_min ]
-                            lower_davsturns.loc[rc,'avg'   ]=compute_da(border_min.angle,
-                                                                        border_min.amplitude,ang_range,interp)
+                            lower_davsturns.loc[rc,'avg'   ]=compute_da(border_min['angle'],
+                                                                        border_min['amplitude'],ang_range,interp)
                             lower_davsturns.loc[rc,'min'   ]=new_DA_lim_min
-                            lower_davsturns.loc[rc,'max'   ]=max(border_min.amplitude)
+                            lower_davsturns.loc[rc,'max'   ]=max(border_min['amplitude'])
 
                             upper_davsturns.loc[rc,'border']=[ new_border_max ]
-                            upper_davsturns.loc[rc,'avg'   ]=compute_da(new_border_max.angle,
-                                                                        new_border_max.amplitude,ang_range,interp)
-                            upper_davsturns.loc[rc,'min'   ]=min(new_border_max.amplitude)
-                            upper_davsturns.loc[rc,'max'   ]=max(new_border_max.amplitude)
+                            upper_davsturns.loc[rc,'avg'   ]=compute_da(new_border_max['angle'],
+                                                                        new_border_max['amplitude'],ang_range,interp)
+                            upper_davsturns.loc[rc,'min'   ]=min(new_border_max['amplitude'])
+                            upper_davsturns.loc[rc,'max'   ]=max(new_border_max['amplitude'])
 
                         raw_border_min=new_border_min
-                        raw_border_max=loss.loc[loss.amplitude<=max_amplitude,['id','angle','amplitude']]
+                        raw_border_max=loss.loc[loss['amplitude']<=max_amplitude,['id','angle','amplitude']]
 
                     # Add new surviving particles to lower da border and smooth da borders
-                    DA_lim_min=min(raw_border_min.amplitude)
+                    DA_lim_min=min(raw_border_min['amplitude'])
                     new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,removed=removed,
                                                                 at_turn=at_turn,DA_lim_min=DA_lim_min,active_warmup=True)
-                    new_da=compute_da_1D(new_border_min.angle, new_border_min.amplitude,ang_range)
+                    new_da=compute_da_1D(new_border_min['angle'], new_border_min['amplitude'],ang_range)
 
                     # Check if DA decrease with the turns
-                    if max(new_border_max.amplitude)<DA_lim_max:
+                    if max(new_border_max['amplitude'])<DA_lim_max:
                         upper_notmonotonius=True
 #                         print(f'Warning: Detect upper border limit problem ({at_turn=})')
 
@@ -1753,18 +1774,39 @@ or for multiseeds:
                     border_max=new_border_max
 
                     # Save DA
+#                     new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'],
+#                                                                        ang_range,interp)],
+#                                          'DAmin lower': [min(border_min['amplitude'])],
+#                                          'DAmax lower': [max(border_min['amplitude'])],
+#                                          'DA upper':    [compute_da_1D(border_max['angle'], border_max['amplitude'],
+#                                                                        ang_range,interp)],
+#                                          'DAmin upper': [min(border_max['amplitude'])],
+#                                          'DAmax upper': [max(border_max['amplitude'])]
+#                                         })
+#                     self._da=concat(self._da,new_da,seed=seed,t=at_turn)
+        
+#                     border_min['seed']=seed; border_min['t']=at_turn;
+#                     border_min.rename(columns = {'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, inplace=False)
+#                     self._border=concat(self._border,border_min,seed=seed,t=at_turn)
+            
+#                     border_max['seed']=seed; border_max['t']=at_turn;
+#                     border_max.rename(columns = {'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, inplace=False)
+#                     self._border=concat(self._border,border_ax,seed=seed,t=at_turn)
+
                     lower_davsturns.loc[at_turn,'turn'  ]=at_turn
                     lower_davsturns.loc[at_turn,'border']=[ border_min ]
-                    lower_davsturns.loc[at_turn,'avg'   ]=compute_da(border_min.angle,border_min.amplitude,ang_range,interp)
-                    lower_davsturns.loc[at_turn,'min'   ]=min(border_min.amplitude)
-#                     lower_davsturns.loc[at_turn,'min'   ]=new_DA_lim_min=min(border_min.amplitude)
-                    lower_davsturns.loc[at_turn,'max'   ]=max(border_min.amplitude)
+                    lower_davsturns.loc[at_turn,'avg'   ]=compute_da(border_min['angle'],border_min['amplitude'],
+                                                                     ang_range,interp)
+                    lower_davsturns.loc[at_turn,'min'   ]=min(border_min['amplitude'])
+#                     lower_davsturns.loc[at_turn,'min'   ]=new_DA_lim_min=min(border_min['amplitude'])
+                    lower_davsturns.loc[at_turn,'max'   ]=max(border_min['amplitude'])
 
                     upper_davsturns.loc[at_turn,'turn'  ]=at_turn
                     upper_davsturns.loc[at_turn,'border']=[ border_max ]
-                    upper_davsturns.loc[at_turn,'avg'   ]=compute_da(border_max.angle,border_max.amplitude,ang_range,interp)
-                    upper_davsturns.loc[at_turn,'min'   ]=min(border_max.amplitude)
-                    upper_davsturns.loc[at_turn,'max'   ]=DA_lim_max=max(border_max.amplitude)
+                    upper_davsturns.loc[at_turn,'avg'   ]=compute_da(border_max['angle'],border_max['amplitude'],
+                                                                     ang_range,interp)
+                    upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
+                    upper_davsturns.loc[at_turn,'max'   ]=DA_lim_max=max(border_max['amplitude'])
                     
                 if upper_notmonotonius:
                     # Impose Monotonicity of the upper max value
@@ -1781,33 +1823,51 @@ or for multiseeds:
                             raw_border_max=upper_davsturns.loc[at_turn,'border'][0]
                             
                             # Remove border particles higher than the upper limit
-                            raw_border_max=raw_border_max.loc[raw_border_max.amplitude<=DA_lim_max]
-                            fit_max=fit_DA(raw_border_max.angle, raw_border_max.amplitude, ang_range)
-                            raw_border_min=raw_border_min.loc[raw_border_min.amplitude<=fit_max(raw_border_min.angle)]
+                            raw_border_max=raw_border_max.loc[raw_border_max['amplitude']<=DA_lim_max]
+                            fit_max=fit_DA(raw_border_max['angle'], raw_border_max['amplitude'], ang_range)
+                            raw_border_min=raw_border_min.loc[raw_border_min['amplitude']<=fit_max(raw_border_min['angle'])]
                             
                             # Add new surviving particles to lower da border and smooth da borders
-                            DA_lim_min=min(raw_border_min.amplitude)
+                            DA_lim_min=min(raw_border_min['amplitude'])
                             new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,
                                                                         at_turn=at_turn,removed=removed,
                                                                         DA_lim_min=DA_lim_min,DA_lim_max=DA_lim_max,
                                                                         active_warmup=True)
 
                             # Save DA
+#                             new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'],
+#                                                                                ang_range,interp)],
+#                                                  'DAmin lower': [min(border_min['amplitude'])],
+#                                                  'DAmax lower': [max(border_min['amplitude'])],
+#                                                  'DA upper':    [compute_da_1D(border_max['angle'], border_max['amplitude'],
+#                                                                                ang_range,interp)],
+#                                                  'DAmin upper': [min(border_max['amplitude'])],
+#                                                  'DAmax upper': [max(border_max['amplitude'])]
+#                                                 })
+#                             self._da=concat(self._da,new_da,seed=seed,t=at_turn)
+        
+#                             border_min['seed']=seed; border_min['t']=at_turn;
+#                             border_min.rename(columns = {'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, inplace=False)
+#                             self._border=concat(self._border,border_min,seed=seed,t=at_turn)
+            
+#                             border_max['seed']=seed; border_max['t']=at_turn;
+#                             border_max.rename(columns = {'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, inplace=False)
+#                             self._border=concat(self._border,border_ax,seed=seed,t=at_turn)
                             lower_davsturns.loc[at_turn,'border']=[ new_border_min ]
-                            lower_davsturns.loc[at_turn,'avg'   ]=compute_da(new_border_min.angle,
-                                                                             new_border_min.amplitude,ang_range,interp)
-                            lower_davsturns.loc[at_turn,'min'   ]=min(new_border_min.amplitude)
-#                             lower_davsturns.loc[at_turn,'min'   ]=new_DA_lim_min=min(new_border_min.amplitude)
-                            lower_davsturns.loc[at_turn,'max'   ]=max(new_border_min.amplitude)
+                            lower_davsturns.loc[at_turn,'avg'   ]=compute_da(new_border_min['angle'],
+                                                                             new_border_min['amplitude'],ang_range,interp)
+                            lower_davsturns.loc[at_turn,'min'   ]=min(new_border_min['amplitude'])
+#                             lower_davsturns.loc[at_turn,'min'   ]=new_DA_lim_min=min(new_border_min['amplitude'])
+                            lower_davsturns.loc[at_turn,'max'   ]=max(new_border_min['amplitude'])
 
                             upper_davsturns.loc[at_turn,'border']=[ new_border_max ]
-                            upper_davsturns.loc[at_turn,'avg'   ]=compute_da(new_border_max.angle,
-                                                                             new_border_max.amplitude,ang_range,interp)
-                            upper_davsturns.loc[at_turn,'min'   ]=min(new_border_max.amplitude)
-                            upper_davsturns.loc[at_turn,'max'   ]=max(new_border_max.amplitude)
+                            upper_davsturns.loc[at_turn,'avg'   ]=compute_da(new_border_max['angle'],
+                                                                             new_border_max['amplitude'],ang_range,interp)
+                            upper_davsturns.loc[at_turn,'min'   ]=min(new_border_max['amplitude'])
+                            upper_davsturns.loc[at_turn,'max'   ]=max(new_border_max['amplitude'])
                             
-                            prev_DA_lim_min=lower_davsturns.loc[at_turn,'min']
-                            prev_DA_lim_max=upper_davsturns.loc[at_turn,'max']
+                            prev_DA_lim_min=min(new_border_min['amplitude'])
+                            prev_DA_lim_max=max(new_border_max['amplitude'])
                             
                             # Recheck previous turns for non-monoticity of the lower DA estimation
                             DA_lim_min=prev_DA_lim_min
@@ -1827,25 +1887,43 @@ or for multiseeds:
 
 
                                         # Check if DA decrease with the turns
-                                        new_da_min=compute_da_1D(new_border_min.angle,new_border_min.amplitude,ang_range)
-                                        raw_da_min=compute_da_1D(border_min.angle,border_min.amplitude)
+                                        new_da_min=compute_da_1D(new_border_min['angle'],new_border_min['amplitude'],ang_range)
+                                        raw_da_min=compute_da_1D(border_min['angle'],border_min['amplitude'])
                                         if new_da_min<raw_da_min:
                                             print(1)
                                             new_border_min=border_min
                                             new_border_max=upper_davsturns.loc[rc,'border'][0]
 
                                         # Save DA
+#                                         new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'],
+#                                                                                            ang_range,interp)],
+#                                                              'DAmin lower': [min(border_min['amplitude'])],
+#                                                              'DAmax lower': [max(border_min['amplitude'])],
+#                                                              'DA upper':    [compute_da_1D(border_max['angle'], border_max['amplitude'],
+#                                                                                            ang_range,interp)],
+#                                                              'DAmin upper': [min(border_max['amplitude'])],
+#                                                              'DAmax upper': [max(border_max['amplitude'])]
+#                                                             })
+#                                         self._da=concat(self._da,new_da,seed=seed,t=at_turn)
+        
+#                                         border_min['seed']=seed; border_min['t']=at_turn;
+#                                         border_min.rename(columns = {'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, inplace=False)
+#                                         self._border=concat(self._border,border_min,seed=seed,t=at_turn)
+            
+#                                         border_max['seed']=seed; border_max['t']=at_turn;
+#                                         border_max.rename(columns = {'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, inplace=False)
+#                                         self._border=concat(self._border,border_ax,seed=seed,t=at_turn)
                                         lower_davsturns.loc[rc,'border']=[ new_border_min ]
-                                        lower_davsturns.loc[rc,'avg'   ]=compute_da(new_border_min.angle,
-                                                                                    new_border_min.amplitude,ang_range,interp)
-                                        lower_davsturns.loc[rc,'min'   ]=min(new_border_min.amplitude)
-                                        lower_davsturns.loc[rc,'max'   ]=max(new_border_min.amplitude)
+                                        lower_davsturns.loc[rc,'avg'   ]=compute_da(new_border_min['angle'],
+                                                                                    new_border_min['amplitude'],ang_range,interp)
+                                        lower_davsturns.loc[rc,'min'   ]=min(new_border_min['amplitude'])
+                                        lower_davsturns.loc[rc,'max'   ]=max(new_border_min['amplitude'])
 
                                         upper_davsturns.loc[rc,'border']=[ new_border_max ]
-                                        upper_davsturns.loc[rc,'avg'   ]=compute_da(new_border_max.angle,
-                                                                                    new_border_max.amplitude,ang_range,interp)
-                                        upper_davsturns.loc[rc,'min'   ]=min(new_border_max.amplitude)
-                                        upper_davsturns.loc[rc,'max'   ]=max(new_border_max.amplitude)
+                                        upper_davsturns.loc[rc,'avg'   ]=compute_da(new_border_max['angle'],
+                                                                                    new_border_max['amplitude'],ang_range,interp)
+                                        upper_davsturns.loc[rc,'min'   ]=min(new_border_max['amplitude'])
+                                        upper_davsturns.loc[rc,'max'   ]=max(new_border_max['amplitude'])
                                     
                                         border_min=new_border_min
                                         DA_lim_min=lower_davsturns.loc[rc,'min']
@@ -1929,24 +2007,6 @@ or for multiseeds:
                                                                 model_boundary=model_boundary,name=name)
         if 'N0' in model_boundary:
             model_boundary['N0'][1]=self.max_turns
-#         if isinstance(model,str):
-#             model=model.lower()
-#             if ('model_2' ==model) or ('2' ==model):
-#                 name='2';  model=Model_2;   model_default=Model_2_default.copy();   model_boundary=Model_2_boundary.copy()
-#             if ('model_2b'==model) or ('2b'==model):
-#                 name='2b'; model=Model_2b;  model_default=Model_2b_default.copy();  model_boundary=Model_2b_boundary.copy()
-#             if ('model_2n'==model) or ('2n'==model):
-#                 name='2n'; model=Model_2n;  model_default=Model_2n_default.copy();  model_boundary=Model_2n_boundary.copy()
-#             if ('model_4' ==model) or ('4' ==model):
-#                 name='4';  model=Model_4;   model_default=Model_4_default.copy();   model_boundary=Model_4_boundary.copy()
-#             if ('model_4b'==model) or ('4b'==model):
-#                 name='4b'; model=Model_4b;  model_default=Model_4b_default.copy();  model_boundary=Model_4b_boundary.copy()
-#             if ('model_4n'==model) or ('4n'==model):
-#                 name='4n'; model=Model_4n;  model_default=Model_4n_default.copy();  model_boundary=Model_4n_boundary.copy()
-#             if 'N0' in model_boundary:
-#                 model_boundary['N0'][1]=self.max_turns
-#         elif isinstance(model_default,dict) or isinstance(model_boundary,dict):
-#             raise ValueError('If you give your own model, also give the model_default and model_boundary parameter values. They must be in the form of a dictionary.')
 
         # Data type selection
         if self.meta.nseeds!=0:
@@ -2490,11 +2550,11 @@ def _calculate_radial_evo(data):
     return np.array([turns, da])
     
 def _get_raw_da_radial(data):
-    angles = np.unique(data.angle)
+    angles = np.unique(data['angle'])
     ampcol = 'amplitude'
     da = {}
     for angle in angles:
-        datasort = data[data.angle==angle].sort_values(ampcol)
+        datasort = data[data['angle']==angle].sort_values(ampcol)
         # Cut out islands from evolution (i.e. force non-monotonously descending)
         datasort['turns_no_islands'] = descend.accumulate(datasort.turns.astype(object))
         # Keep the values around the places where the number of turns changes
