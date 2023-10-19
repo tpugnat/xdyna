@@ -39,6 +39,8 @@ size_scaling: Type of losses dot scaling (Default="log"). There are 3 options: "
 
     if at_turn is None:
         at_turn=DA.max_turns
+    if at_turn > DA.max_turns:
+        raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
     if DA.meta.nseeds==0:
         data = DA.survival_data.copy()
     else:
@@ -135,6 +137,8 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
 
     if at_turn is None:
         at_turn=DA.max_turns
+    if at_turn > DA.max_turns:
+        raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
     if DA._lower_davsturns is None:
         DA.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=True)
 
@@ -226,27 +230,37 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
 
     if to_turn is None:
         to_turn=DA.max_turns
+    if to_turn > DA.max_turns:
+        raise ValueError(f'to_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
 
-    if DA._lower_davsturns is None:
+    if DA.da is None:
         DA.calculate_davsturns(from_turn=from_turn,to_turn=to_turn)
 
     if DA.meta.nseeds==0:
-        lower_da=DA._lower_davsturns
-        upper_da=DA._upper_davsturns
+#         lower_da=DA._lower_davsturns
+#         upper_da=DA._upper_davsturns
+        lower_da=DA._da.loc[:,["DA lower","DAmin lower","DAmax lower","t"]].set_index("t", drop=False)
+        upper_da=DA._da.loc[:,["DA upper","DAmin upper","DAmax upper","t"]].set_index("t", drop=False)
     else:
-        lower_da=DA._lower_davsturns[seed]
-        upper_da=DA._upper_davsturns[seed]
-
+        lower_da=DA._da.loc[DA._da.seed==seed,["DA lower","DAmin lower","DAmax lower","t"]].set_index("t", drop=False)
+        upper_da=DA._da.loc[DA._da.seed==seed,["DA upper","DAmin upper","DAmax upper","t"]].set_index("t", drop=False)
+#         lower_da=DA._lower_davsturns[seed]
+#         upper_da=DA._upper_davsturns[seed]
+    print(lower_da)
     # Select the range of data
-    lturns_data=np.array([t for t in lower_da.turn if t>=from_turn and t<=to_turn])
+#     lturns_data=np.array([t for t in lower_da.turn if t>=from_turn and t<=to_turn])
+    lturns_data=np.array([t for t in lower_da.t if t>=from_turn and t<=to_turn])
     lturns_data=lturns_data[np.argsort(lturns_data)]
     lturns_prev=[t-1 for t in lturns_data if t>from_turn and t<=to_turn]
 
     if cupper is not None and cupper!='':
         # Load Data
-        davsturns_avg=upper_da.loc[lturns_data,'avg'] ;
-        davsturns_min=upper_da.loc[lturns_data,'min'] ;
-        davsturns_max=upper_da.loc[lturns_data,'max'] ;
+#         davsturns_avg=upper_da.loc[lturns_data,'avg'] ;
+#         davsturns_min=upper_da.loc[lturns_data,'min'] ;
+#         davsturns_max=upper_da.loc[lturns_data,'max'] ;
+        davsturns_avg=upper_da.loc[lturns_data,'DA upper'] ;
+        davsturns_min=upper_da.loc[lturns_data,'DAmin upper'] ;
+        davsturns_max=upper_da.loc[lturns_data,'DAmax upper'] ;
 
         # Add step at turns-1
         if show_Nm1:
@@ -262,11 +276,11 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
         y_max=np.array(davsturns_max[lturns], dtype=float)
 
         # Plot the results
-        ax.plot(lturns,y_avg,ls="-.",label=label,color=cupper,alpha=alpha,**kwargs);
-        ax.plot(lturns,y_min,ls="-", label='',   color=cupper,alpha=alpha,**kwargs);
-        ax.plot(lturns,y_max,ls="-", label='',   color=cupper,alpha=alpha,**kwargs);
+        ax.plot(lturns,y_avg,ls="-",label=label,color=cupper,alpha=alpha,**kwargs);
+#        ax.plot(lturns,y_min,ls="-", label='',   color=cupper,alpha=alpha,**kwargs);
+#        ax.plot(lturns,y_max,ls="-", label='',   color=cupper,alpha=alpha,**kwargs);
 
-        ax.fill_between(lturns,y_min, y_max,color=cupper,alpha=alpha*0.1,**kwargs)
+#        ax.fill_between(lturns,y_min, y_max,color=cupper,alpha=alpha*0.1,**kwargs)
 
         if seed=='stat' and show_seed:
             for s in range(1,DA.meta.nseeds+1):
@@ -293,9 +307,12 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
 
     if clower is not None and clower!='':
         # Load Data
-        davsturns_avg=lower_da.loc[lturns_data,'avg'] ;
-        davsturns_min=lower_da.loc[lturns_data,'min'] ;
-        davsturns_max=lower_da.loc[lturns_data,'max'] ;
+#         davsturns_avg=lower_da.loc[lturns_data,'avg'] ;
+#         davsturns_min=lower_da.loc[lturns_data,'min'] ;
+#         davsturns_max=lower_da.loc[lturns_data,'max'] ;
+        davsturns_avg=lower_da.loc[lturns_data,'DA lower'] ;
+        davsturns_min=lower_da.loc[lturns_data,'DAmin lower'] ;
+        davsturns_max=lower_da.loc[lturns_data,'DAmax lower'] ;
 
         # Add step at turns-1
         if show_Nm1:
@@ -304,6 +321,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
                 davsturns_min[prev]=davsturns_min[turn]
                 davsturns_max[prev]=davsturns_max[turn]
 
+        print(davsturns_avg)
         lturns=np.array(davsturns_avg.index.tolist())
         lturns=lturns[np.argsort(lturns)]
         y_avg=np.array(davsturns_avg[lturns], dtype=float)
@@ -311,11 +329,11 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
         y_max=np.array(davsturns_max[lturns], dtype=float)
 
         # Plot the results
-        ax.plot(lturns,y_avg,ls="-.",label=label,color=clower,alpha=alpha,**kwargs);
-        ax.plot(lturns,y_min,ls="-", label='',   color=clower,alpha=alpha,**kwargs);
-        ax.plot(lturns,y_max,ls="-", label='',   color=clower,alpha=alpha,**kwargs);
+        ax.plot(lturns,y_avg,ls="-",label=label,color=clower,alpha=alpha,**kwargs);
+#        ax.plot(lturns,y_min,ls="-", label='',   color=clower,alpha=alpha,**kwargs);
+#        ax.plot(lturns,y_max,ls="-", label='',   color=clower,alpha=alpha,**kwargs);
 
-        ax.fill_between(lturns,y_min, y_max,color=clower,alpha=alpha*0.1,**kwargs)
+#        ax.fill_between(lturns,y_min, y_max,color=clower,alpha=alpha*0.1,**kwargs)
 
         if seed=='stat' and show_seed:
             for s in range(1,DA.meta.nseeds+1):

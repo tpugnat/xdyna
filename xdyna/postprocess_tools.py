@@ -141,16 +141,22 @@ def Model_2(N, rho=1, K=1, N0=1):            # Eq. 20
     return rho * ( K/( 2*np.exp(1)*np.log(N/N0) ) )**K 
 Model_2_default  ={'rho':1, 'K':1, 'N0':1}
 Model_2_boundary ={'rho':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]}
+def Model_2_mask(N, rho=1, K=1, N0=1):
+    return [True for nn in N]
 
 def Model_2b(N, btilde=1, K=1, N0=1, B=1):   # Eq. 35a
     return btilde / ( B*np.log(N/N0) )**K      
 Model_2b_default ={'btilde':1, 'K':1, 'N0':1} #, 'B':1}
 Model_2b_boundary={'btilde':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]} #, 'B':[1e-10,1e5]}
+def Model_2b_mask(N, btilde=1, K=1, N0=1, B=1):
+    return [True for nn in N]
 
 def Model_2n(N, b=1, K=1, N0=1):             # Eq. 2 from Frederik
     return b / ( np.log(N/N0) )**K      
 Model_2n_default ={'b':1, 'K':1, 'N0':1}
 Model_2n_boundary={'b':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]}
+def Model_2n_mask(N, b=1, K=1, N0=1):
+    return [True for nn in N]
 
 
 
@@ -158,60 +164,81 @@ def Model_4(N, rho=1, K=1, lmbd=0.5):        # Eq. 23
     return rho / ( -(2*np.exp(1)*lmbd) * np.real(W( (-1/(2*np.exp(1)*lmbd)) * (rho/6)**(1/K) * (8*N/7)**(-1/(lmbd*K)) ,k=-1)) )**K  
 Model_4_default  ={'rho':1, 'K':1} #, 'lmbd':0.5
 Model_4_boundary ={'rho':[1e-10,1e10], 'K':[0.01,2]} #, 'lmbd':[1e-10,1e10]}
+def Model_4_mask(N, rho=1, K=1, lmbd=0.5):
+    return np.imag(W( (-1/(2*np.exp(1)*lmbd)) * (rho/6)**(1/K) * (8*N/7)**(-1/(lmbd*K)) ,k=-1))==0
 
 def Model_4b(N, btilde=1, K=1, N0=1, B=1):   # Eq. 35c
     return btilde / (-(0.5*K*B) * np.real(W( (-2/(K*B)) * (N/N0)**(-2/K) ,k=-1)) )**K  
 Model_4b_default ={'btilde':1, 'K':1, 'N0':1} #, 'B':1}
 Model_4b_boundary={'btilde':[1e-10,np.inf], 'K':[0.01,2], 'N0':[1,np.inf]} #, 'B':[1e-10,1e10]}
+def Model_4b_mask(N, btilde=1, K=1, N0=1, B=1):
+    return np.imag(W( (-2/(K*B)) * (N/N0)**(-2/K) ,k=-1))==0
 
 def Model_4n(N, rho=1, K=1, mu=1):           # Eq. 4 from Frederik
     return rho / (- np.real(W( (mu*N)**(-2/K) ,k=-1)) )**K  
 Model_4n_default ={'rho':1, 'K':1, 'mu':1}
 Model_4n_boundary={'rho':[1e-10,np.inf], 'K':[0.01,2], 'mu':[1e-10,1e10]}
+def Model_4n_mask(N, rho=1, K=1, mu=1):
+    return np.imag(W( (mu*N)**(-2/K) ,k=-1))==0
 
 
-def select_model(model,model_default={},model_boundary={},name='user'):
+def Model_user_mask(N, **kwarg):
+    return [True for nn in N]
+
+
+def select_model(model,model_default={},model_boundary={},model_mask=Model_user_mask,name='user'):
     if isinstance(model,str):
-        model=model.lower()
+#         print(f"{type(model)=}")
+#         print(f"{type(model_default)=}")
+#         print(f"{type(model_boundary)=}")
+#         print(f"{type(model_mask)=}")
+        model=model.lower(); mdefault =model_default.copy(); 
+        mboundary=model_boundary.copy(); mmask=model_mask;
         if ('model_2' ==model) or ('2' ==model):
             name='2';  
             model=Model_2;   
-            model_default =Model_2_default.copy();   
-            model_boundary=Model_2_boundary.copy();
+            mdefault =Model_2_default.copy();   
+            mboundary=Model_2_boundary.copy(); 
+            mmask    =Model_2_mask;
 #                 keys=[k for k in Model_2_default.keys()];
         if ('model_2b'==model) or ('2b'==model):
             name='2b'; 
             model=Model_2b;  
-            model_default =Model_2b_default.copy();  
-            model_boundary=Model_2b_boundary.copy();
+            mdefault =Model_2b_default.copy();  
+            mboundary=Model_2b_boundary.copy();
+            mmask    =Model_2b_mask;
 #                 keys=[k for k in Model_2b_default.keys()];
         if ('model_2n'==model) or ('2n'==model):
             name='2n'; 
             model=Model_2n;  
-            model_default =Model_2n_default.copy();  
-            model_boundary=Model_2n_boundary.copy();
+            mdefault =Model_2n_default.copy();  
+            mboundary=Model_2n_boundary.copy();
+            mmask    =Model_2n_mask;
 #                 keys=[k for k in Model_2n_default.keys()];
         if ('model_4' ==model) or ('4' ==model):
             name='4';  
             model=Model_4;   
-            model_default =Model_4_default.copy();   
-            model_boundary=Model_4_boundary.copy();
+            mdefault =Model_4_default.copy();   
+            mboundary=Model_4_boundary.copy();
+            mmask    =Model_4_mask;
 #                 keys=[k for k in Model_4_default.keys()];
-        if ('model_4b'==model) or ('4b'==model):
+        elif ('model_4b'==model) or ('4b'==model):
             name='4b'; 
             model=Model_4b;  
-            model_default =Model_4b_default.copy();  
-            model_boundary=Model_4b_boundary.copy();
+            mdefault =Model_4b_default.copy();  
+            mboundary=Model_4b_boundary.copy();
+            mmask    =Model_4b_mask;
 #                 keys=[k for k in Model_4b_default.keys()];
-        if ('model_4n'==model) or ('4n'==model):
+        elif ('model_4n'==model) or ('4n'==model):
             name='4n'; 
             model=Model_4n;  
-            model_default =Model_4n_default.copy();  
-            model_boundary=Model_4n_boundary.copy();
+            mdefault =Model_4n_default.copy();  
+            mboundary=Model_4n_boundary.copy();
+            mmask    =Model_4n_mask;
 #                 keys=[k for k in Model_4n_default.keys()];
     elif not isinstance(model_default,dict) or not isinstance(model_boundary,dict):
         raise ValueError('If you give your own model, give model_default and model_boundary parameter as dictionaries.')
-    return name, model, model_default, model_boundary
+    return name, model, mdefault, mboundary, mmask
             
             
     model=model.lower()
