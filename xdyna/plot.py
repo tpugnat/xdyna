@@ -149,18 +149,18 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
     ang_range=(min(angle),max(angle))
 
     if DA.meta.nseeds==0:
-        lower_da=DA._lower_davsturns
-        upper_da=DA._upper_davsturns
+        border=DA._border
     else:
-        lower_da=DA._lower_davsturns[seed]
-        upper_da=DA._upper_davsturns[seed]
+        border=DA._border[DA._border.seed==seed]
 
-    at_turn=max(lower_da.turn[lower_da.turn<=at_turn])
+    at_turn=max(border.t[border.t<=at_turn])
 
-    fit_min=fit_DA(lower_da.loc[at_turn,'border'][0].angle, 
-                   lower_da.loc[at_turn,'border'][0].amplitude, ang_range)
-    fit_max=fit_DA(upper_da.loc[at_turn,'border'][0].angle, 
-                   upper_da.loc[at_turn,'border'][0].amplitude, ang_range)
+    mask_lower=(border.t==at_turn)
+    mask_upper=(border.t==at_turn)
+    fit_min=fit_DA(border.loc[mask_lower,'ang lower'],
+                   border.loc[mask_lower,'amp lower'], ang_range)
+    fit_max=fit_DA(border.loc[mask_upper,'ang upper'], 
+                   border.loc[mask_upper,'amp upper'], ang_range)
 
     amplitude_min=fit_min(angle)
     amplitude_max=fit_max(angle)
