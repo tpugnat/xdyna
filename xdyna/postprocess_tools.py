@@ -327,8 +327,12 @@ def _da_raw(data,at_turn):
             max_section_surv=section_surv.loc[section_surv.amplitude==max_amplitude_surv,:].reset_index()
             border_min.loc[idx,['amplitude','angle','id']]=[max_section_surv.amplitude[0],max_section_surv.angle[0],
                                                             max_section_surv.id[0]]
+        
 #     return pd.DataFrame(border_min), pd.DataFrame(border_max)
-    return border_min.dropna().reset_index(), border_max.dropna().reset_index()
+    if border_min.isna().values.any() or border_max.isna().values.any():
+        border_min.dropna(inplace=True,ignore_index=True)
+        border_max.dropna(inplace=True,ignore_index=True)
+    return border_min, border_max
 # --------------------------------------------------------
 
     
