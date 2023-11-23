@@ -165,8 +165,6 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
     angle  = np.sort(angle)
     amplitude_min=fit_min(angle)
     amplitude_max=fit_max(angle)
-#     sort = np.argsort(angle)
-#     angle= angle[sort]; amplitude_min = amplitude_min[sort]; amplitude_max = amplitude_max[sort]
     if type_plot=="polar":
         if clower is not None and clower!='':
             ax.plot(angle,amplitude_min,color=clower,label=label+' (min)',**kwargs)
