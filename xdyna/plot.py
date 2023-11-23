@@ -155,17 +155,18 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
 
     at_turn=max(border.t[border.t<=at_turn])
 
-    mask_lower=(border.t==at_turn)
-    mask_upper=(border.t==at_turn)
+    mask_lower=(border.t==at_turn) & (~border['ang lower'].isna())
+    mask_upper=(border.t==at_turn) & (~border['ang upper'].isna())
     fit_min=fit_DA(border.loc[mask_lower,'ang lower'],
                    border.loc[mask_lower,'amp lower'], ang_range)
     fit_max=fit_DA(border.loc[mask_upper,'ang upper'], 
                    border.loc[mask_upper,'amp upper'], ang_range)
 
+    angle  = np.sort(angle)
     amplitude_min=fit_min(angle)
     amplitude_max=fit_max(angle)
-    sort = np.argsort(angle)
-    angle= angle[sort]; amplitude_min = amplitude_min[sort]; amplitude_max = amplitude_max[sort]
+#     sort = np.argsort(angle)
+#     angle= angle[sort]; amplitude_min = amplitude_min[sort]; amplitude_max = amplitude_max[sort]
     if type_plot=="polar":
         if clower is not None and clower!='':
             ax.plot(angle,amplitude_min,color=clower,label=label+' (min)',**kwargs)
