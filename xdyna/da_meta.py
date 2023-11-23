@@ -236,6 +236,10 @@ class _DAMetaData:
         return Path(self.path, self.name + '.da.' + self.db_extension).resolve() if self._use_files else None
 
     @property
+    def border_file(self):
+        return Path(self.path, self.name + '.border.' + self.db_extension).resolve() if self._use_files else None
+
+    @property
     def da_evol_file(self):
         return Path(self.path, self.name + '.da_evol.' + self.db_extension).resolve() if self._use_files else None
 
