@@ -1423,12 +1423,12 @@ or for multiseeds:
 #             self._da=pd.DataFrame(columns=['t','seed', 'ang','amp','ang low','amp low', \
 #                                            'ang up','amp up'])
             self._border=pd.DataFrame(columns=['t','seed', 'ang lower','amp lower','ang upper','amp upper'])
-            if self.meta.nseeds==0:
-                self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
-                self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
-            else:
-                self._lower_davsturns={s:pd.DataFrame(columns=['turn','border','avg','min','max']) for s in range(1,self.meta.nseeds+1)}
-                self._upper_davsturns={s:pd.DataFrame(columns=['turn','border','avg','min','max']) for s in range(1,self.meta.nseeds+1)}
+#             if self.meta.nseeds==0:
+#                 self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
+#                 self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
+#             else:
+#                 self._lower_davsturns={s:pd.DataFrame(columns=['turn','border','avg','min','max']) for s in range(1,self.meta.nseeds+1)}
+#                 self._upper_davsturns={s:pd.DataFrame(columns=['turn','border','avg','min','max']) for s in range(1,self.meta.nseeds+1)}
         
         # Select data per seed if needed
         data=self.survival_data.copy()
@@ -1450,9 +1450,9 @@ or for multiseeds:
         ang_range=(self.meta.ang_min,self.meta.ang_max)
         
         # Run DA raw border detection
-        sys.stdout.write(f'seed {0:>3d}')
+#         sys.stdout.write(f'seed {0:>3d}')
         for seed,data in zip(list_seed,list_data):
-            sys.stdout.write(f'\rseed {seed:>3d}')
+#             sys.stdout.write(f'\rseed {seed:>3d}')
 
             # Get DA raw estimation
             border_min, border_max =_da_raw(data,at_turn)
@@ -1595,32 +1595,32 @@ or for multiseeds:
 #             self._da.loc[row,'DAmin upper']= min(border_max['amplitude'])
 #             self._da.loc[row,'DAmax upper']= max(border_max['amplitude'])
                 
-            if self.meta.nseeds==0:
-                self._lower_davsturns.loc[at_turn,'turn'  ]=at_turn
-                self._lower_davsturns.loc[at_turn,'border']=[ border_min ]
-                self._lower_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
-                self._lower_davsturns.loc[at_turn,'min'   ]=min(border_min['amplitude'])
-                self._lower_davsturns.loc[at_turn,'max'   ]=max(border_min['amplitude'])
+#             if self.meta.nseeds==0:
+#                 self._lower_davsturns.loc[at_turn,'turn'  ]=at_turn
+#                 self._lower_davsturns.loc[at_turn,'border']=[ border_min ]
+#                 self._lower_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
+#                 self._lower_davsturns.loc[at_turn,'min'   ]=min(border_min['amplitude'])
+#                 self._lower_davsturns.loc[at_turn,'max'   ]=max(border_min['amplitude'])
                 
-                self._upper_davsturns.loc[at_turn,'turn'  ]=at_turn
-                self._upper_davsturns.loc[at_turn,'border']=[ border_max ]
-                self._upper_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
-                self._upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
-                self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max['amplitude'])
-            else:
+#                 self._upper_davsturns.loc[at_turn,'turn'  ]=at_turn
+#                 self._upper_davsturns.loc[at_turn,'border']=[ border_max ]
+#                 self._upper_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
+#                 self._upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
+#                 self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max['amplitude'])
+#             else:
                 
-                self._lower_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
-                self._lower_davsturns[seed].loc[at_turn,'border']=[ border_min ]
-                self._lower_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
-                self._lower_davsturns[seed].loc[at_turn,'min'   ]=min(border_min['amplitude'])
-                self._lower_davsturns[seed].loc[at_turn,'max'   ]=max(border_min['amplitude'])
+#                 self._lower_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
+#                 self._lower_davsturns[seed].loc[at_turn,'border']=[ border_min ]
+#                 self._lower_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
+#                 self._lower_davsturns[seed].loc[at_turn,'min'   ]=min(border_min['amplitude'])
+#                 self._lower_davsturns[seed].loc[at_turn,'max'   ]=max(border_min['amplitude'])
                 
-                self._upper_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
-                self._upper_davsturns[seed].loc[at_turn,'border']=[ border_max ]
-                self._upper_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
-                self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
-                self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
-        sys.stdout.write(f'\rComputing DA at turn {at_turn} succesfully end!\n')
+#                 self._upper_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
+#                 self._upper_davsturns[seed].loc[at_turn,'border']=[ border_max ]
+#                 self._upper_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
+#                 self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
+#                 self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
+        sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
         
         
 #         if self.meta.nseeds==0:
@@ -1673,6 +1673,8 @@ or for multiseeds:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
             
 #         if self._lower_davsturns is None or (self.meta.nseeds==0 and to_turn not in self._lower_davsturns)or  (self.meta.nseeds>0 and to_turn not in self._lower_davsturns[1]):
+#         self.read_da()
+#         self.read_border()
         if self._da is None or to_turn not in self._da['t']:
             self.calculate_da(at_turn=to_turn,smoothing=True)
         
@@ -1701,8 +1703,6 @@ or for multiseeds:
         else:
             
             # Select data per seed if needed
-            data = self.survival_data.copy()
-            data['id']= data.index
             if 'angle' not in data.columns or 'amplitude' not in data.columns:
                 data['angle']      = np.arctan2(data['y'],data['x'])*180/np.pi
                 data['amplitude']  = np.sqrt(data['x']**2+data['y']**2)
@@ -1984,6 +1984,8 @@ or for multiseeds:
 #             sys.stdout.write(f'\rCompute turn-by-turn statistic... Done!\n')
 #             self._lower_davsturns['stat']=stat_lower_davsturns
 #             self._upper_davsturns['stat']=stat_upper_davsturns
+#         self.write_da()
+#         self.write_border()
 
     # =================================================================
     # ========================== Fit models ===========================
@@ -1991,7 +1993,7 @@ or for multiseeds:
 
     # Not allowed on parallel process
     def _fit_model(self,nb_param,data_type,model,name='user',model_default={},model_boundary={},model_mask=None,
-                   seed=None,nrand=1000,nsig=2,ntry=2,save=True,force=False):
+                   seed=None,nrand=1000,nsig=2,ntry=2,save=True,force=False, fix_seed=True):
         '''DA vs turns fitting procedure.
 
     Parameters
@@ -2020,13 +2022,17 @@ or for multiseeds:
         if self.meta.nseeds!=0:
             row=pd.MultiIndex.from_tuples([(data_type[0],data_type[1],f'{seed}')], names=["method", "type", "seed"])
         davsturn=select_rows(self._da,seed=seed)
+        
+        if fix_seed and data_type[0] in ['uniform','normal']:
+            print("# Fix seed for model fitting")
+            np.random.seed(0)
 
         if data_type[1]=='avg':
             dtemp='DA'
-        elif data_type[1]=='min':
-            dtemp='DAmin'
-        elif data_type[1]=='max':
-            dtemp='DAmax'
+        elif data_type[1] in ['min','max']:
+            dtemp='DA'+data_type[1]
+        else:
+            dtemp=data_type[1]
         xdata =np.array(davsturn.loc[:,'t'].values, dtype=float)
         ylower=np.array(davsturn.loc[:, dtemp+' lower' ].values, dtype=float)
         yupper=np.array(davsturn.loc[:, dtemp+' upper' ].values, dtype=float)
@@ -2035,6 +2041,8 @@ or for multiseeds:
             lx=[xdata]; ly=[ylower]
         elif 'upper' == data_type[0]:
             lx=[xdata]; ly=[yupper]
+        elif 'average' == data_type[0]:
+            lx=[xdata]; ly=[0.5*(yupper+ylower)]
         elif data_type[0] in ['uniform','normal']:
             row_std=pd.MultiIndex.from_tuples([(data_type[0][:4]+'std',data_type[1],f'{seed}')], 
                                               names=["method", "type", "seed"])
@@ -2090,7 +2098,11 @@ or for multiseeds:
                 try:
                     # Fit model to plots
                     dflt_new, sg=curve_fit(model,x,y,p0=dflt,bounds=bndr)
-                    error=((y - model(x,**smdefault))**2).sum() / (len(y)-nprm)
+#                     print(f"{smdefault=}")
+#                     tmp={kk:vv for kk,vv in zip(keys_fit,dflt_new)}
+#                     print(f"{tmp=}")
+                    error=((y - model(x,**{kk:vv for kk,vv in zip(keys_fit,dflt_new)}))**2).sum() / (len(y)-nprm)
+#                     error=((y - model(x,**smdefault))**2).sum() / (len(y))
                 except Exception as err:
                     warnings.warn(f"[{type(err)}] No solution found for {data_type} Model {name} (Nb. param: {nprm}). Return -1.")
                     dflt_new=tuple([-1 for k in dflt]); error=-1
@@ -2208,10 +2220,10 @@ or for multiseeds:
 
         if data_type[1]=='avg':
             dtemp='DA'
-        elif data_type[1]=='min':
-            dtemp='DAmin'
-        elif data_type[1]=='max':
-            dtemp='DAmax'
+        elif data_type[1] in ['min','max']:
+            dtemp='DA'+data_type[1]
+        else:
+            dtemp=data_type[1]
         data=select_rows(self._da_model,seed=seed,fit=dtemp+' '+data_type[0])
         data.reset_index(inplace=True)
         # Multicolumns
@@ -2404,6 +2416,40 @@ or for multiseeds:
             else:
                 raise NotImplementedError
 
+    def border_exists(self):
+        return self.meta._use_files and self.meta.border_file.exists()
+
+    def read_border(self, pf=None):
+        if self.border_exists():
+            if self.meta.db_extension=='parquet':
+                if pf is None:
+                    with ProtectFile(self.meta.border_file, 'rb', wait=_db_access_wait_time) as pf:
+                        self._border = pd.read_parquet(pf, engine="pyarrow")
+                else:
+                    self._border = pd.read_parquet(pf, engine="pyarrow")
+                for cc in self._border.columns:
+                    self._border.loc[self._border[cc]==-1,cc]=np.nan
+            else:
+                raise NotImplementedError
+        else:
+            return None
+
+    def write_border(self, pf=None):
+        if self.meta._use_files and not self.meta._read_only:
+            if self.meta.db_extension=='parquet':
+                self._border.fillna(-1)
+                if pf is None:
+                    with ProtectFile(self.meta.border_file, 'wb', wait=_db_access_wait_time) as pf:
+                        self._border.to_parquet(pf, index=True, engine="pyarrow")
+                else:
+                    pf.truncate(0)  # Delete file contents (to avoid appending)
+                    pf.seek(0)      # Move file pointer to start of file
+                    self._border.to_parquet(pf, index=True, engine="pyarrow")
+                for cc in self._border.columns:
+                    self._border.loc[self._border[cc]==-1,cc]=np.nan
+            else:
+                raise NotImplementedError
+
     def da_evol_exists(self):
         return self.meta._use_files and self.meta.da_evol_file.exists()
 
@@ -2449,6 +2495,8 @@ or for multiseeds:
 #                 for ii in range(len(col)):
 #                     col[ii][1]=int(col[ii][1])
 #                 self._da_model.columns=pd.MultiIndex.from_tuples(col,names=['model', 'nprm', 'key'])
+                for cc in self._da_model.columns:
+                    self._da_model.loc[self._da_model[cc]==-1,cc]=np.nan
             else:
                 raise NotImplementedError
         else:
@@ -2470,6 +2518,8 @@ or for multiseeds:
                     self._da_model.to_parquet(pf, index=True, engine="pyarrow")
                 # Change columns format in order to be saved/loaded
 #                 self._da_model.columns=save_col
+                for cc in self._da_model.columns:
+                    self._da_model.loc[self._da_model[cc]==-1,cc]=np.nan
             else:
                 raise NotImplementedError
             
