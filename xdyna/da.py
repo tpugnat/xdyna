@@ -1671,15 +1671,22 @@ or for multiseeds:
             interp=alter_simpson
         else:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
+        ang_range=(self.meta.ang_min,self.meta.ang_max)
             
 #         if self._lower_davsturns is None or (self.meta.nseeds==0 and to_turn not in self._lower_davsturns)or  (self.meta.nseeds>0 and to_turn not in self._lower_davsturns[1]):
 #         self.read_da()
 #         self.read_border()
         if self._da is None or to_turn not in self._da['t']:
             self.calculate_da(at_turn=to_turn,smoothing=True)
+            
+        # Load particle data
+        data = self.survival_data.copy()
+        data['id']= data.index
         
         # Run DA raw border detection
         if self.da_type not in ['monte_carlo', 'free']:
+            # Create the round_angle columns
+            data['round_angle']= data['angle']
 
             # Get list of turn to 
             lturns=np.sort(np.unique(bin_size*np.floor(self.survival_data.nturns/bin_size)))
@@ -1692,17 +1699,40 @@ or for multiseeds:
             else:
                 lturns=np.array([at_turn for at_turn in lturns if any([at_turn not in t_steps[seed] for seed in range(1,self.meta.nseeds+1)]) ])
             
-            
+            # Loop in turn to compute the da
             for at_turn in reversed(lturns):
+                # Select the list of seed to comput at this turn
                 if self.meta.nseeds==0 or at_turn==from_turn or at_turn==to_turn or bin_size>1:
                     list_seed=None
                 else:
                     list_seed=np.sort(np.unique(self.survival_data.loc[self.survival_data.nturns==at_turn,'seed']))
-                self.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=False,list_seed=list_seed)
-                sys.stdout.write(f'\r')
+                    
+                if self.meta.nseeds==0:
+                    list_seed=[ 0 ]
+                    list_data=[ data ]
+                elif at_turn==from_turn or at_turn==to_turn or bin_size>1:
+                    list_seed=[s for s in range(1,self.meta.nseeds+1)]
+                    list_data=[ data[data.seed==s].copy() for s in list_seed ]
+                else:
+                    list_seed=np.sort(np.unique(data.loc[data.nturns==at_turn,'seed']))
+                    list_data=[ data[data.seed==s].copy() for s in list_seed ]
+                
+#                 self.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=False,list_seed=list_seed)
+        
+                # Run DA raw border detection
+#                 sys.stdout.write(f'seed {0:>3d}')
+                for seed,data in zip(list_seed,list_data):
+#                     sys.stdout.write(f'\rseed {seed:>3d}')
+
+                    # Get DA raw estimation
+                    border_min, border_max =_da_raw(data,at_turn)
+
+                    self._set_da_and_border(seed,at_turn,border_min,border_max,ang_range)
+                sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
+                
+#                 sys.stdout.write(f'\r')
         else:
-            
-            # Select data per seed if needed
+            # Transform data from x-y format to ang-amp
             if 'angle' not in data.columns or 'amplitude' not in data.columns:
                 data['angle']      = np.arctan2(data['y'],data['x'])*180/np.pi
                 data['amplitude']  = np.sqrt(data['x']**2+data['y']**2)
@@ -1714,7 +1744,6 @@ or for multiseeds:
                 list_seed=[ s for s in range(1,self.meta.nseeds+1) ]
                 list_data=[ data[data.seed==s].copy() for s in range(1,self.meta.nseeds+1) ]
             
-            ang_range=(self.meta.ang_min,self.meta.ang_max)
             for seed,data in zip(list_seed,list_data):
 #                 if self.meta.nseeds==0:
 #                     lower_davsturns=self._lower_davsturns
