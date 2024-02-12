@@ -1451,25 +1451,25 @@ or for multiseeds:
         
         # Run DA raw border detection
 #         sys.stdout.write(f'seed {0:>3d}')
-        for seed,data in zip(list_seed,list_data):
+        for ss,dd in zip(list_seed,list_data):
 #             sys.stdout.write(f'\rseed {seed:>3d}')
 
             # Get DA raw estimation
-            border_min, border_max =_da_raw(data,at_turn)
+            border_min, border_max =_da_raw(dd,at_turn)
 
 #             # Detect range to look at the DA border
-#             losses =data.nturns<at_turn
-#             loss=data.loc[ losses,:]; min_loss=min(loss['amplitude'])
-#             surv=data.loc[~losses,:]; max_surv=max(surv['amplitude'])
+#             losses =dd.nturns<at_turn
+#             loss=dd.loc[ losses,:]; min_loss=min(loss['amplitude'])
+#             surv=dd.loc[~losses,:]; max_surv=max(surv['amplitude'])
 #             min_amplitude = min([min_loss,max_surv])-2
 #             max_amplitude = max([min_loss,max_surv])+2
 
 #             # Get a raw DA estimation from losses
 #             border_max={'id':[],'angle':[],'amplitude':[]}
 #             border_min={'id':[],'angle':[],'amplitude':[]}
-#             for ang in np.unique(data['round_angle']):
+#             for ang in np.unique(dd['round_angle']):
 #                 # Select angulare slice
-#                 section=data.loc[data.round_angle==ang,:]
+#                 section=dd.loc[dd.round_angle==ang,:]
 
 #                 # Identify losses and surviving particles
 #                 losses =section.nturns<at_turn
@@ -1509,9 +1509,9 @@ or for multiseeds:
 
             if self.da_type in ['monte_carlo', 'free']:
 
-                losses =data.nturns<at_turn
-                loss=data.loc[ losses,:]
-                surv=data.loc[~losses,:]
+                losses =dd.nturns<at_turn
+                loss=dd.loc[ losses,:]
+                surv=dd.loc[~losses,:]
 
                 # Check if losses lower than upper DA boundary, add those to max DA boundary
                 border_max_fit=fit_DA(border_max['angle'], border_max['amplitude'], ang_range)
@@ -1557,14 +1557,14 @@ or for multiseeds:
 
                 # Smooth DA
                 if smoothing:
-                    border_min,border_max=_da_smoothing(data,border_min,border_max,at_turn=at_turn)
+                    border_min,border_max=_da_smoothing(dd,border_min,border_max,at_turn=at_turn)
         
             # Save and return DA
             if self.meta.nseeds==0:
                 row=f't{at_turn}'
             else:
-                row=f't{at_turn} s{seed}'
-            self._set_da_and_border(seed,at_turn,border_min,border_max,ang_range)
+                row=f't{at_turn} s{ss}'
+            self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
 #             new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
 #                                  'DAmin lower': [min(border_min['amplitude'])],
 #                                  'DAmax lower': [max(border_min['amplitude'])],
@@ -1572,21 +1572,21 @@ or for multiseeds:
 #                                  'DAmin upper': [min(border_max['amplitude'])],
 #                                  'DAmax upper': [max(border_max['amplitude'])]
 #                                 })
-#             self._da=concat(self._da,new_da,seed=seed,t=at_turn)
+#             self._da=concat(self._da,new_da,seed=ss,t=at_turn)
             
-# #             border_min['seed']=seed; border_min['t']=at_turn;
+# #             border_min['seed']=ss; border_min['t']=at_turn;
 #             self._border=concat(self._border,
 #                                 border_min.rename(columns={'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, 
 #                                                   inplace=False),
-#                                 seed=seed,t=at_turn)
+#                                 seed=ss,t=at_turn)
             
-# #             border_max['seed']=seed; border_max['t']=at_turn;
+# #             border_max['seed']=ss; border_max['t']=at_turn;
 #             self._border=concat(self._border,
 #                                 border_max.rename(columns={'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, 
 #                                                   inplace=False),
-#                                 seed=seed,t=at_turn)
+#                                 seed=ss,t=at_turn)
     
-#             self._da.loc[row,'seed']= seed
+#             self._da.loc[row,'seed']= ss
 #             self._da.loc[row,'t']   = at_turn
 #             self._da.loc[row,'DA lower']   = compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
 #             self._da.loc[row,'DAmin lower']= min(border_min['amplitude'])
@@ -1609,15 +1609,15 @@ or for multiseeds:
 #                 self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max['amplitude'])
 #             else:
                 
-#                 self._lower_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
-#                 self._lower_davsturns[seed].loc[at_turn,'border']=[ border_min ]
-#                 self._lower_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
-#                 self._lower_davsturns[seed].loc[at_turn,'min'   ]=min(border_min['amplitude'])
-#                 self._lower_davsturns[seed].loc[at_turn,'max'   ]=max(border_min['amplitude'])
+#                 self._lower_davsturns[ss].loc[at_turn,'turn'  ]=at_turn
+#                 self._lower_davsturns[ss].loc[at_turn,'border']=[ border_min ]
+#                 self._lower_davsturns[ss].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
+#                 self._lower_davsturns[ss].loc[at_turn,'min'   ]=min(border_min['amplitude'])
+#                 self._lower_davsturns[ss].loc[at_turn,'max'   ]=max(border_min['amplitude'])
                 
-#                 self._upper_davsturns[seed].loc[at_turn,'turn'  ]=at_turn
-#                 self._upper_davsturns[seed].loc[at_turn,'border']=[ border_max ]
-#                 self._upper_davsturns[seed].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
+#                 self._upper_davsturns[ss].loc[at_turn,'turn'  ]=at_turn
+#                 self._upper_davsturns[ss].loc[at_turn,'border']=[ border_max ]
+#                 self._upper_davsturns[ss].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
 #                 self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                 self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
         sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
@@ -1626,7 +1626,7 @@ or for multiseeds:
 #         if self.meta.nseeds==0:
 #             return self._lower_davsturns.border,self._lower_davsturns.border
 #         else:
-#             return self._lower_davsturns[seed].border,self._lower_davsturns[seed].border
+#             return self._lower_davsturns[ss].border,self._lower_davsturns[ss].border
 
 
     
@@ -1674,8 +1674,8 @@ or for multiseeds:
         ang_range=(self.meta.ang_min,self.meta.ang_max)
             
 #         if self._lower_davsturns is None or (self.meta.nseeds==0 and to_turn not in self._lower_davsturns)or  (self.meta.nseeds>0 and to_turn not in self._lower_davsturns[1]):
-#         self.read_da()
-#         self.read_border()
+        self.read_da()
+        self.read_border()
         if self._da is None or to_turn not in self._da['t']:
             self.calculate_da(at_turn=to_turn,smoothing=True)
             
@@ -1687,47 +1687,57 @@ or for multiseeds:
         if self.da_type not in ['monte_carlo', 'free']:
             # Create the round_angle columns
             data['round_angle']= data['angle']
+            
+#             import time
+#             ti = time.time()
 
             # Get list of turn to 
             lturns=np.sort(np.unique(bin_size*np.floor(self.survival_data.nturns/bin_size)))
             lturns=lturns[(lturns>from_turn) & (lturns<to_turn)]
-            lturns=np.unique(np.append(lturns,[from_turn,to_turn])).astype(int)
+            lturns=np.unique([from_turn, *lturns, to_turn]).astype(int)
             
-            t_steps=self.t_steps
+            # Remove turns already computed
             if self.meta.nseeds==0:
-                lturns=np.array([at_turn for at_turn in lturns if at_turn not in t_steps])
+                lturns=np.sort(list(set(lturns) - set(self.t_steps)))
             else:
-                lturns=np.array([at_turn for at_turn in lturns if any([at_turn not in t_steps[seed] for seed in range(1,self.meta.nseeds+1)]) ])
-            
+                lturns=np.sort(list(set(lturns) - set(np.concatenate(list(self.t_steps.values())))))
+                
+#             te = time.time(); print(f"calculate_davsturns: pre loop {te-ti:.4}s") ; ti = te;
+
             # Loop in turn to compute the da
             for at_turn in reversed(lturns):
                 # Select the list of seed to comput at this turn
-                if self.meta.nseeds==0 or at_turn==from_turn or at_turn==to_turn or bin_size>1:
-                    list_seed=None
-                else:
-                    list_seed=np.sort(np.unique(self.survival_data.loc[self.survival_data.nturns==at_turn,'seed']))
+#                 if self.meta.nseeds==0 or at_turn==from_turn or at_turn==to_turn or bin_size>1:
+#                     list_seed=None
+#                 else:
+#                     list_seed=np.sort(np.unique(self.survival_data.loc[self.survival_data.nturns==at_turn,'seed']))
                     
                 if self.meta.nseeds==0:
                     list_seed=[ 0 ]
                     list_data=[ data ]
                 elif at_turn==from_turn or at_turn==to_turn or bin_size>1:
                     list_seed=[s for s in range(1,self.meta.nseeds+1)]
-                    list_data=[ data[data.seed==s].copy() for s in list_seed ]
+                    list_data=[ data.loc[data.seed==s,:] for s in list_seed ]
                 else:
                     list_seed=np.sort(np.unique(data.loc[data.nturns==at_turn,'seed']))
-                    list_data=[ data[data.seed==s].copy() for s in list_seed ]
+                    list_data=[ data.loc[data.seed==s,:] for s in list_seed ]
+                    
+#                 te = time.time(); print(f"calculate_davsturns: select in loop1 {te-ti:.4}s") ; ti = te;
                 
 #                 self.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=False,list_seed=list_seed)
         
                 # Run DA raw border detection
 #                 sys.stdout.write(f'seed {0:>3d}')
-                for seed,data in zip(list_seed,list_data):
+                for ss,dd in zip(list_seed,list_data):
 #                     sys.stdout.write(f'\rseed {seed:>3d}')
 
                     # Get DA raw estimation
-                    border_min, border_max =_da_raw(data,at_turn)
-
-                    self._set_da_and_border(seed,at_turn,border_min,border_max,ang_range)
+                    border_min, border_max =_da_raw(dd,at_turn)
+#                     te = time.time(); print(f"calculate_davsturns: da_raw in loop2 {te-ti:.4}s") ; ti = te;
+            
+                    self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
+#                     te = time.time(); print(f"calculate_davsturns: set_da in loop2 {te-ti:.4}s") ; ti = te;
+                    
                 sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
                 
 #                 sys.stdout.write(f'\r')
@@ -1741,8 +1751,8 @@ or for multiseeds:
                 list_seed=[ 0 ]
                 list_data=[ data ]
             else:
-                list_seed=[ s for s in range(1,self.meta.nseeds+1) ]
-                list_data=[ data[data.seed==s].copy() for s in range(1,self.meta.nseeds+1) ]
+                list_seed=[ ss for ss in range(1,self.meta.nseeds+1) ]
+                list_data=[ data[data.seed==ss].copy() for ss in range(1,self.meta.nseeds+1) ]
             
             for seed,data in zip(list_seed,list_data):
 #                 if self.meta.nseeds==0:
@@ -2013,8 +2023,8 @@ or for multiseeds:
 #             sys.stdout.write(f'\rCompute turn-by-turn statistic... Done!\n')
 #             self._lower_davsturns['stat']=stat_lower_davsturns
 #             self._upper_davsturns['stat']=stat_upper_davsturns
-#         self.write_da()
-#         self.write_border()
+        self.write_da()
+        self.write_border()
 
     # =================================================================
     # ========================== Fit models ===========================

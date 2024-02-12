@@ -270,69 +270,109 @@ def select_model(model,model_default={},model_boundary={},model_mask=Model_user_
 def _da_raw(data,at_turn):
     # Detect range to look at the DA border
     losses =data.nturns<at_turn
-    loss=data.loc[ losses,:]; min_loss=min(loss.amplitude)
-    surv=data.loc[~losses,:]; max_surv=max(surv.amplitude)
+    min_loss=data.amplitude[losses].min()
+    max_surv=data.amplitude[~losses].max()
     min_amplitude = min([min_loss,max_surv])-2
     max_amplitude = max([min_loss,max_surv])+2
 
+#     # Get a raw DA estimation from losses
+#     list_angles=np.unique(data['round_angle'])
+#     border_max=pd.DataFrame({},index=range(len(list_angles)),columns=['id','angle','amplitude'])
+#     border_min=pd.DataFrame({},index=range(len(list_angles)),columns=['id','angle','amplitude'])
+    
+# #     id_max=np.empty(shape=len(list_angles))
+# #     id_min=np.empty(shape=len(list_angles))
+#     for idx,ang in enumerate(list_angles):
+#         # Select angulare slice
+#         mask_angl = (data.round_angle==ang)
+#         mask_loss = (mask_angl) & ( losses) & (data.amplitude<=max_amplitude)
+#         mask_surv = (mask_angl) & (~losses) & (data.amplitude>=min_amplitude)
+# #         section=data.loc[data.round_angle==ang,:]
+
+#         # Identify losses and surviving particles
+# #         losses =section.nturns<at_turn
+# #         section_loss=section.loc[ losses,:];
+# #         section_loss=section_loss.loc[section_loss.amplitude<=max_amplitude,:]
+# #         data[mask_loss & (data.amplitude<=max_amplitude)]
+# #         section_surv=section.loc[~losses,:]; section_surv=section_surv.loc[section_surv.amplitude>=min_amplitude,:]
+
+#         # Detect DA boundary
+# #         if not section_loss.empty and not section_surv.empty:
+#         if not data[mask_loss].empty and not data[mask_surv].empty:
+# #             min_amplitude_loss=min(section_loss.amplitude)
+#             min_amplitude_loss=data[mask_loss].amplitude.idxmin()
+# #             border_max['amplitude'].append(min_amplitude_loss)
+# #             border_max['angle'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'angle'].values[0])
+# #             border_max['id'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'id'].values[0])
+# #             min_section_loss=section_loss.loc[section_loss.amplitude==min_amplitude_loss,:].reset_index()
+#             data[mask_loss].loc[min_amplitude_loss]
+
+#             border_max.loc[idx,['amplitude','angle','id']]=[min_section_loss.amplitude[0],min_section_loss.angle[0],
+#                                                             min_section_loss.id[0]]
+
+#             mask = data[mask_surv].amplitude < data[mask_loss].loc[min_amplitude_loss, 'amplitude']
+#             #WE ARE HERE
+#             if any(mask):
+#                 max_amplitude_surv=max(section_surv.amplitude[mask])
+# #                 border_min['amplitude'].append(max_amplitude_surv)
+# #                 border_min['angle'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'angle'].values[0])
+# #                 border_min['id'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'id'].values[0])
+#                 max_section_surv=section_surv.loc[section_surv.amplitude==max_amplitude_surv,:].reset_index()
+#                 border_min.loc[idx,['amplitude','angle','id']]=[max_section_surv.amplitude[0],max_section_surv.angle[0],
+#                                                                 max_section_surv.id[0]]
+
+#         elif not section_loss.empty:
+#             min_amplitude_loss=min(section_loss.amplitude)
+# #             border_max['amplitude'].append(min_amplitude_loss)
+# #             border_max['angle'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'angle'].values[0])
+# #             border_max['id'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'id'].values[0])
+#             min_section_loss=section_loss.loc[section_loss.amplitude==min_amplitude_loss,:].reset_index()
+#             border_max.loc[idx,['amplitude','angle','id']]=[min_section_loss.amplitude[0],min_section_loss.angle[0],
+#                                                             min_section_loss.id[0]]
+
+#         elif not section_surv.empty:
+#             max_amplitude_surv=max(section_surv.amplitude)
+# #             border_min['amplitude'].append(max_amplitude_surv)
+# #             border_min['angle'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'angle'].values[0])
+# #             border_min['id'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'id'].values[0])
+#             max_section_surv=section_surv.loc[section_surv.amplitude==max_amplitude_surv,:].reset_index()
+#             border_min.loc[idx,['amplitude','angle','id']]=[max_section_surv.amplitude[0],max_section_surv.angle[0],
+#                                                             max_section_surv.id[0]]
+        
+        
+#     # Clean dataframe
+#     if border_min.isna().values.any() or border_max.isna().values.any():
+# #         border_min.dropna(inplace=True,ignore_index=True)
+# #         border_max.dropna(inplace=True,ignore_index=True)
+#         border_min.dropna(inplace=True)
+#         border_max.dropna(inplace=True)
+#         border_min.reset_index(inplace=True)
+#         border_max.reset_index(inplace=True)
+#     return border_min, border_max
+        
+        
     # Get a raw DA estimation from losses
     list_angles=np.unique(data['round_angle'])
-#     border_max={'id':[],'angle':[],'amplitude':[]}
-#     border_min={'id':[],'angle':[],'amplitude':[]}
-    border_max=pd.DataFrame({},index=range(len(list_angles)),columns=['id','angle','amplitude'])
-    border_min=pd.DataFrame({},index=range(len(list_angles)),columns=['id','angle','amplitude'])
+    
+    id_max=np.empty(shape=len(list_angles))*np.nan
+    id_min=np.empty(shape=len(list_angles))*np.nan
     for idx,ang in enumerate(list_angles):
         # Select angulare slice
-        section=data.loc[data.round_angle==ang,:]
-
-        # Identify losses and surviving particles
-        losses =section.nturns<at_turn
-        section_loss=section.loc[ losses,:]; section_loss=section_loss.loc[section_loss.amplitude<=max_amplitude,:]
-        section_surv=section.loc[~losses,:]; section_surv=section_surv.loc[section_surv.amplitude>=min_amplitude,:]
+        mask_loss = (data.round_angle==ang) & ( losses) & (data.amplitude<=max_amplitude)
+        mask_surv = (data.round_angle==ang) & (~losses) & (data.amplitude>=min_amplitude)
 
         # Detect DA boundary
-        if not section_loss.empty and not section_surv.empty:
-            min_amplitude_loss=min(section_loss.amplitude)
-#             border_max['amplitude'].append(min_amplitude_loss)
-#             border_max['angle'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'angle'].values[0])
-#             border_max['id'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'id'].values[0])
-            min_section_loss=section_loss.loc[section_loss.amplitude==min_amplitude_loss,:].reset_index()
-            border_max.loc[idx,['amplitude','angle','id']]=[min_section_loss.amplitude[0],min_section_loss.angle[0],
-                                                            min_section_loss.id[0]]
+        if any(mask_loss):
+            id_max[idx] = data.amplitude[mask_loss].idxmin()
+            mask_surv = (mask_surv) & (data.amplitude < data.amplitude[id_max[idx]])
 
-            mask = section_surv.amplitude<min_amplitude_loss
-            if any(mask):
-                max_amplitude_surv=max(section_surv.amplitude[mask])
-#                 border_min['amplitude'].append(max_amplitude_surv)
-#                 border_min['angle'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'angle'].values[0])
-#                 border_min['id'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'id'].values[0])
-                max_section_surv=section_surv.loc[section_surv.amplitude==max_amplitude_surv,:].reset_index()
-                border_min.loc[idx,['amplitude','angle','id']]=[max_section_surv.amplitude[0],max_section_surv.angle[0],
-                                                                max_section_surv.id[0]]
+        if any(mask_surv):
+            id_min[idx] = data.amplitude[mask_surv].idxmax()
 
-        elif not section_loss.empty:
-            min_amplitude_loss=min(section_loss.amplitude)
-#             border_max['amplitude'].append(min_amplitude_loss)
-#             border_max['angle'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'angle'].values[0])
-#             border_max['id'].append(section_loss.loc[section_loss.amplitude==min_amplitude_loss,'id'].values[0])
-            min_section_loss=section_loss.loc[section_loss.amplitude==min_amplitude_loss,:].reset_index()
-            border_max.loc[idx,['amplitude','angle','id']]=[min_section_loss.amplitude[0],min_section_loss.angle[0],
-                                                            min_section_loss.id[0]]
-
-        elif not section_surv.empty:
-            max_amplitude_surv=max(section_surv.amplitude)
-#             border_min['amplitude'].append(max_amplitude_surv)
-#             border_min['angle'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'angle'].values[0])
-#             border_min['id'].append(section_surv.loc[section_surv.amplitude==max_amplitude_surv,'id'].values[0])
-            max_section_surv=section_surv.loc[section_surv.amplitude==max_amplitude_surv,:].reset_index()
-            border_min.loc[idx,['amplitude','angle','id']]=[max_section_surv.amplitude[0],max_section_surv.angle[0],
-                                                            max_section_surv.id[0]]
-        
-#     return pd.DataFrame(border_min), pd.DataFrame(border_max)
-    if border_min.isna().values.any() or border_max.isna().values.any():
-        border_min.dropna(inplace=True,ignore_index=True)
-        border_max.dropna(inplace=True,ignore_index=True)
-    return border_min, border_max
+    # Clean array
+    id_min=id_min[np.isfinite(id_min)]
+    id_max=id_max[np.isfinite(id_max)]
+    return data.loc[id_min,['amplitude','angle','id']], data.loc[id_max,['amplitude','angle','id']]
 # --------------------------------------------------------
 
     
