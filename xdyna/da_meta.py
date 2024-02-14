@@ -23,8 +23,9 @@ def regenerate_meta_file(name, **kwargs):
     """Function to manually regenerate the *.meta.json file, in case it got corrupted or deleted.
     
     """
-    meta = _DAMetaData(name, use_files=False)
-    if meta.meta_file.exists():
+    path = kwargs.pop('path',    './')
+    meta = _DAMetaData(name, path=path, use_files=False)
+    if meta.meta_file is not None and meta.meta_file.exists():
         print("Warning: metadata file already exists! Not regenerated.")
     else:
         # Initialise fields by kwargs
