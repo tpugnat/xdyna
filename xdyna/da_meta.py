@@ -481,7 +481,7 @@ class _DAMetaData:
                     submissions_file = self.rebuild_submission_from_backup()
                 #new_id = len(submissions_file['submissions'].keys())
                 #submissions_file['submissions'][new_id] = {}
-                new_id = str(len(submissions_file.keys))
+                new_id = str(len(submissions_file.keys()))
                 submissions_file[new_id] = {}
                 pf.truncate(0)  # Delete file contents (to avoid appending)
                 pf.seek(0)      # Move file pointer to start of file
