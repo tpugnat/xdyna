@@ -667,15 +667,16 @@ class _DAMetaData:
     # This will overwrite the value associated to submission_id in self._submissions with val.
     def _read_submissions(self):
         if self._use_files and not self._read_only:
-            try:
-                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+            with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                try:
                     val = json.load(pf)
-                    #setattr(self, '_submissions', val['submissions'] )
-                    setattr(self, '_submissions', val )
-            except json.decoder.JSONDecodeError:
-                # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
-                # using backups file from submissions_dir
-                val = self.rebuild_submission_from_backup()
+                except json.decoder.JSONDecodeError:
+                    # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
+                    # using backups file from submissions_dir
+                    val = self.rebuild_submission_from_backup()
+                    pf_backup.truncate(0)  # Delete file contents (to avoid appending)
+                    pf_backup.seek(0)      # Move file pointer to start of file
+                    json.dump(val, pf, indent=2, sort_keys=False)
                 #setattr(self, '_submissions', val['submissions'] )
                 setattr(self, '_submissions', val )
 
