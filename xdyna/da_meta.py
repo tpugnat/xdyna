@@ -681,8 +681,8 @@ class _DAMetaData:
                     # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
                     # using backups file from submissions_dir
                     val = self.rebuild_submission_from_backup()
-                    pf_backup.truncate(0)  # Delete file contents (to avoid appending)
-                    pf_backup.seek(0)      # Move file pointer to start of file
+                    pf.truncate(0)  # Delete file contents (to avoid appending)
+                    pf.seek(0)      # Move file pointer to start of file
                     json.dump(val, pf, indent=2, sort_keys=False)
                 #setattr(self, '_submissions', val['submissions'] )
                 setattr(self, '_submissions', val )
