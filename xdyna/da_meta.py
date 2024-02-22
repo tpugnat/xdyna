@@ -1,6 +1,8 @@
 import numbers
 from pathlib import Path
 import json
+from os import listdir, makedirs
+from os.path import isfile, join
 
 from .protectfile import ProtectFile
 
@@ -24,6 +26,18 @@ def regenerate_meta_file(name, **kwargs):
     
     """
     path = kwargs.pop('path',    './')
+    # First check if the file is readable and correct it's format if not to the last version.
+    meta_file = Path(path, name + '.meta.json').resolve()
+    if meta_file.exists():
+        try:
+            with ProtectFile(meta_file, 'r+') as pf:
+                meta = json.load(pf)
+        except json.decoder.JSONDecodeError:
+            import shutil
+            shutil.move(meta_file, Path(str(meta_file) + ".corrupted"))
+
+            print("Warning: metadata file has been corrupted! A copy of the corruption file has been made in the same directory!")
+    
     meta = _DAMetaData(name, path=path, use_files=False)
     if meta.meta_file is not None and meta.meta_file.exists():
         print("Warning: metadata file already exists! Not regenerated.")
@@ -120,9 +134,10 @@ class _DAMetaData:
     
     _fields = ['name','path','da_type','da_dim','nemitt_x','nemitt_y','min_turns','max_turns','npart','energy','nseeds',\
                'r_max','pairs_shift','pairs_shift_var','s_start','meta_file','madx_file','line_file','db_extension',\
-               'surv_file','da_file','da_evol_file','submissions','ang_min','ang_max']
-    _path_fields = ['path','meta_file','madx_file','line_file','surv_file','da_file','da_evol_file']
-    _auto_fields = ['name','path','meta_file','surv_file','da_file','da_evol_file']
+    #           'surv_file','da_file','da_evol_file','submissions','ang_min','ang_max']
+               'surv_file','da_file','da_evol_file','submissions_file','submissions_dir','ang_min','ang_max']
+    _path_fields = ['path','meta_file','madx_file','line_file','surv_file','da_file','da_evol_file','submissions_file','submissions_dir']
+    _auto_fields = ['name','path','meta_file','surv_file','da_file','da_evol_file','submissions_file','submissions_dir']
     # used to specify the accepted DA types
     _da_types=['radial', 'grid', 'monte_carlo', 'free']
     # used to specify the accepted file formats for the survival dataframe
@@ -144,7 +159,7 @@ class _DAMetaData:
         'pairs_shift':     0,
         'pairs_shift_var': None,
         's_start':         0,
-        'submissions':     {},
+        #'submissions':     {},
         'line_file':       None,
         'madx_file':       None,
         'db_extension':    'parquet'
@@ -208,6 +223,17 @@ class _DAMetaData:
     @property
     def meta_file(self):
         return Path(self.path, self.name + '.meta.json').resolve() if self._use_files else None
+
+    @property
+    def submissions_file(self):
+        return Path(self.path, self.name + '.submissions.json').resolve() if self._use_files else None
+
+    @property
+    def submissions_dir(self):
+        return Path(self.path, 'submissions_dir').resolve() if self._use_files else None
+    
+    def submission_backup(self,num):
+        return Path(self.submissions_dir, self.name + f'.submission.{num}.json').resolve() if self._use_files else None
 
     @property
     def madx_file(self):
@@ -445,27 +471,117 @@ class _DAMetaData:
         if not self._use_files or self._read_only:
             return None
         else:
-            with ProtectFile(self.meta_file, 'r+', wait=0.005) as pf:
-                meta = json.load(pf)
-                new_id = len(meta['submissions'].keys())
-                meta['submissions'][new_id] = {}
-                pf.truncate(0)  # Delete file contents (to avoid appending)
-                pf.seek(0)      # Move file pointer to start of file
-                json.dump(meta, pf, indent=2, sort_keys=False)
-                self._submissions = meta['submissions']
-                return new_id
+            file_not_saved=True
+            #while file_not_saved:
+            try:
+                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    submissions_file = json.load(pf)
+                    #new_id = len(submissions_file['submissions'].keys())
+                    #submissions_file['submissions'][new_id] = {}
+                    new_id = len(submissions_file.keys())
+                    submissions_file[new_id] = {}
+                    pf.truncate(0)  # Delete file contents (to avoid appending)
+                    pf.seek(0)      # Move file pointer to start of file
+                    json.dump(submissions_file, pf, indent=2, sort_keys=False)
+                file_not_saved=False
+            except json.decoder.JSONDecodeError:
+                # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
+                # using backups file from submissions_dir
+                submissions_file = self.rebuild_submission_from_backup()
+                new_id = len(submissions_file.keys())
+                submissions_file[new_id] = {}
+                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    pf.truncate(0)  # Delete file contents (to avoid appending)
+                    pf.seek(0)      # Move file pointer to start of file
+                    json.dump(submissions_file, pf, indent=2, sort_keys=False)
+            #self._submissions = submissions_file['submissions']
+            self._submissions = submissions_file
+
+            #with ProtectFile(self.submission_backup(new_id), 'r+', wait=0.005) as pf:
+            #    submission_backup = {new_id:{}}
+            #    pf.truncate(0)  # Delete file contents (to avoid appending)
+            #    pf.seek(0)      # Move file pointer to start of file
+            #    json.dump(submission_backup, pf, indent=2, sort_keys=False)
+            self._store_submissions_backup(new_id,{})
+
+            return new_id
 
     # Allowed on parallel process (but only if each process updates only the log attached to its unique ID).
     # This will overwrite the value associated to submission_id in self._submissions with val.
     def update_submissions(self, submission_id, val):
         if self._use_files and not self._read_only:
-            with ProtectFile(self.meta_file, 'r+', wait=0.005) as pf:
-                meta = json.load(pf)
-                meta['submissions'].update({str(submission_id): val})
-                pf.truncate(0)  # Delete file contents (to avoid appending)
-                pf.seek(0)      # Move file pointer to start of file
-                json.dump(meta, pf, indent=2, sort_keys=False)
-                self._submissions = meta['submissions']
+            try:
+                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    submissions_file = json.load(pf)
+                    #submissions_file['submissions'].update({str(submission_id): val})
+                    submissions_file.update({submission_id: val})
+                    pf.truncate(0)  # Delete file contents (to avoid appending)
+                    pf.seek(0)      # Move file pointer to start of file
+                    json.dump(submissions_file, pf, indent=2, sort_keys=False)
+            except json.decoder.JSONDecodeError:
+                # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
+                # using backups file from submissions_dir
+                submissions_file = self.rebuild_submission_from_backup()
+                submissions_file.update({submission_id: val})
+                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    pf.truncate(0)  # Delete file contents (to avoid appending)
+                    pf.seek(0)      # Move file pointer to start of file
+                    json.dump(submissions_file, pf, indent=2, sort_keys=False)
+            #self._submissions = submissions_file['submissions']
+            self._submissions = submissions_file
+                
+            #try:
+            #    with ProtectFile(self.submission_backup(submission_id), 'r+', wait=0.005) as pf:
+            #        submission_backup = json.load(pf)
+            #        submission_backup[submission_id].update(val)
+            #        pf.truncate(0)  # Delete file contents (to avoid appending)
+            #        pf.seek(0)      # Move file pointer to start of file
+            #        json.dump(submission_backup, pf, indent=2, sort_keys=False)
+            #except json.decoder.JSONDecodeError:
+            #    # If the backup file is also corrupted, overright it with a corruption_warning and. 
+            #    with ProtectFile(self.submission_backup(submission_id), 'r+', wait=0.005) as pf:
+            #        submission_backup = {submission_id:{}}
+            #        if 'warnings' not in val:
+            #            val['warnings'] = []
+            #        val['warnings'].append('Backup corrupted and reset!')
+            #        submission_backup[submission_id].update(val)
+            #        pf.truncate(0)  # Delete file contents (to avoid appending)
+            #        pf.seek(0)      # Move file pointer to start of file
+            #        json.dump(submission_backup, pf, indent=2, sort_keys=False)
+            self._store_submissions_backup(submission_id,val)
+
+    # It happen that the submission file get corrupted. This function is here to handle this scenario and
+    # rebuild the submission file from backups.
+    def rebuild_submission_from_backup(self):
+        #TODO
+        #submission = {'submissions':{}}
+        submission = {}
+        with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+            list_backup = self.submissions_dir.glob(f'{self.name}.submission.*.json')
+            
+            for backup_file in list_backup:
+                submission_id = int(str(backup_file).split('.')[-2])
+                val = self._read_submissions_backup(submission_id)
+                submission[submission_id] = val[submission_id]
+                #try:
+                #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
+                #        val = json.load(pf_backup)
+                #        submission_id = int(list(val.keys())[0])
+                #        #submission['submissions'][submission_id] = val[submission_id]
+                #        submission[submission_id] = val[submission_id]
+                #except json.decoder.JSONDecodeError:
+                #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
+                #        
+                #        val = {submission_id:{'warnings':'Backup corrupted and reset!'}}
+                #        pf_backup.truncate(0)  # Delete file contents (to avoid appending)
+                #        pf_backup.seek(0)      # Move file pointer to start of file
+                #        json.dump(val, pf_backup, indent=2, sort_keys=False)
+                #        #submission['submissions'][submission_id] = val[submission_id]
+                #        submission[submission_id] = val[submission_id]
+                        
+            json.dump(submission, pf, indent=2, sort_keys=False)
+                
+        return submission
 
     # Not allowed on parallel process!
     def _set_property(self, prop, val):
@@ -503,6 +619,9 @@ class _DAMetaData:
             with ProtectFile(self.meta_file, 'r+') as pf:
                 meta = json.load(pf)
                 # clean up paths in meta
+                if 'submissions' in meta:
+                    self._submissions = meta.pop('submissions')
+                    self._store_submissions()
                 for field in self._path_fields:
                     val = meta.get(field, None)
                     if val is not None:
@@ -526,6 +645,37 @@ class _DAMetaData:
                             and Path(self.path, self._line_file.name).exists():
                         self._line_file = Path(self.path, self._line_file.name)
                     self._store(pf=pf)
+            self._read_submissions()
+
+    # Allowed on parallel process (but only if each process updates only the log attached to its unique ID).
+    # This will overwrite the value associated to submission_id in self._submissions with val.
+    def _read_submissions(self):
+        if self._use_files and not self._read_only:
+            try:
+                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    val = json.load(pf)
+                    #setattr(self, '_submissions', val['submissions'] )
+                    setattr(self, '_submissions', val )
+            except json.decoder.JSONDecodeError:
+                # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
+                # using backups file from submissions_dir
+                val = self.rebuild_submission_from_backup()
+                #setattr(self, '_submissions', val['submissions'] )
+                setattr(self, '_submissions', val )
+
+    # Allowed on parallel process (but only if each process updates only the log attached to its unique ID).
+    # This will overwrite the value associated to submission_id in self._submissions with val.
+    def _read_submissions_backup(self,submission_id):
+        try:
+            with ProtectFile(self.submission_backup(submission_id) , 'r+', wait=0.005) as pf_backup:
+                val = json.load(pf_backup)
+        except json.decoder.JSONDecodeError:
+            with ProtectFile(self.submission_backup(submission_id) , 'r+', wait=0.005) as pf_backup:
+                val = {submission_id:{'warnings':['Backup corrupted and reset!']}}
+                pf_backup.truncate(0)  # Delete file contents (to avoid appending)
+                pf_backup.seek(0)      # Move file pointer to start of file
+                json.dump(val, pf_backup, indent=2, sort_keys=False)
+        return val
 
     def _store(self, pf=None):
         self._store_properties = True
@@ -543,6 +693,37 @@ class _DAMetaData:
                 pf.truncate(0)  # Delete file contents (to avoid appending)
                 pf.seek(0)      # Move file pointer to start of file
                 json.dump(meta, pf, indent=2, sort_keys=False)
+            self._store_submissions()
+                
+    def _store_submissions(self):
+        mode = 'r+' if self.submissions_file.exists() else 'x+'
+        with ProtectFile(self.submissions_file, mode) as pf:
+            if mode == 'r+':
+                pf.truncate(0)  # Delete file contents (to avoid appending)
+                pf.seek(0)      # Move file pointer to start of file
+            json.dump(self._submissions, pf, indent=2, sort_keys=False)
+            
+        for kk,val in self._submissions.items():
+            self._store_submissions_backup(kk,val)
+                
+    def _store_submissions_backup(self,submission_id,val):
+        if not self.submissions_dir.exists():
+            makedirs(self.submissions_dir)
+        
+        mode = 'r+' if self.submission_backup(submission_id).exists() else 'x+'
+        with ProtectFile(self.submission_backup(submission_id), mode) as pf:
+            submission_backup = {submission_id:{}}
+            if mode == 'r+':
+                try:
+                    submission_backup = json.load(pf)
+                except json.decoder.JSONDecodeError:
+                    if 'warnings' not in val:
+                        val['warnings'] = []
+                    val['warnings'].append('Backup corrupted and reset!')
+                pf.truncate(0)  # Delete file contents (to avoid appending)
+                pf.seek(0)      # Move file pointer to start of file
+            submission_backup[submission_id].update(val)
+            json.dump(submission_backup, pf, indent=2, sort_keys=False)
     
     def _paths_to_strings(self, meta, ignore=[]):
         update_dict = {}
