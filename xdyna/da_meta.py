@@ -572,30 +572,37 @@ class _DAMetaData:
         #TODO
         #submission = {'submissions':{}}
         submission = {}
-        with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
-            list_backup = self.submissions_dir.glob(f'{self.name}.submission.*.json')
+        list_backup = self.submissions_dir.glob(f'{self.name}.submission.*.json')
+
+        for backup_file in list_backup:
+            submission_id = str(backup_file).split('.')[-2]
+            val = self._read_submissions_backup(submission_id)
+            submission.update({submission_id:val[submission_id]})
             
-            for backup_file in list_backup:
-                submission_id = str(backup_file).split('.')[-2]
-                val = self._read_submissions_backup(submission_id)
-                submission.update({submission_id:val[submission_id]})
-                #try:
-                #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
-                #        val = json.load(pf_backup)
-                #        submission_id = int(list(val.keys())[0])
-                #        #submission['submissions'][submission_id] = val[submission_id]
-                #        submission[submission_id] = val[submission_id]
-                #except json.decoder.JSONDecodeError:
-                #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
-                #        
-                #        val = {submission_id:{'warnings':'Backup corrupted and reset!'}}
-                #        pf_backup.truncate(0)  # Delete file contents (to avoid appending)
-                #        pf_backup.seek(0)      # Move file pointer to start of file
-                #        json.dump(val, pf_backup, indent=2, sort_keys=False)
-                #        #submission['submissions'][submission_id] = val[submission_id]
-                #        submission[submission_id] = val[submission_id]
+        #with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+        #    list_backup = self.submissions_dir.glob(f'{self.name}.submission.*.json')
+        #    
+        #    for backup_file in list_backup:
+        #        submission_id = str(backup_file).split('.')[-2]
+        #        val = self._read_submissions_backup(submission_id)
+        #        submission.update({submission_id:val[submission_id]})
+        #        #try:
+        #        #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
+        #        #        val = json.load(pf_backup)
+        #        #        submission_id = int(list(val.keys())[0])
+        #        #        #submission['submissions'][submission_id] = val[submission_id]
+        #        #        submission[submission_id] = val[submission_id]
+        #        #except json.decoder.JSONDecodeError:
+        #        #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
+        #        #        
+        #        #        val = {submission_id:{'warnings':'Backup corrupted and reset!'}}
+        #        #        pf_backup.truncate(0)  # Delete file contents (to avoid appending)
+        #        #        pf_backup.seek(0)      # Move file pointer to start of file
+        #        #        json.dump(val, pf_backup, indent=2, sort_keys=False)
+        #        #        #submission['submissions'][submission_id] = val[submission_id]
+        #        #        submission[submission_id] = val[submission_id]
                         
-            json.dump(submission, pf, indent=2, sort_keys=False)
+        #    json.dump(submission, pf, indent=2, sort_keys=False)
                 
         return submission
 
