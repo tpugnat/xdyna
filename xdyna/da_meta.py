@@ -473,27 +473,43 @@ class _DAMetaData:
         else:
             file_not_saved=True
             #while file_not_saved:
-            try:
-                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+            
+            with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                try:
                     submissions_file = json.load(pf)
-                    #new_id = len(submissions_file['submissions'].keys())
-                    #submissions_file['submissions'][new_id] = {}
-                    new_id = len(submissions_file.keys())
-                    submissions_file[new_id] = {}
-                    pf.truncate(0)  # Delete file contents (to avoid appending)
-                    pf.seek(0)      # Move file pointer to start of file
-                    json.dump(submissions_file, pf, indent=2, sort_keys=False)
-                file_not_saved=False
-            except json.decoder.JSONDecodeError:
-                # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
-                # using backups file from submissions_dir
-                submissions_file = self.rebuild_submission_from_backup()
-                new_id = len(submissions_file.keys())
+                except json.decoder.JSONDecodeError:
+                    submissions_file = self.rebuild_submission_from_backup()
+                #new_id = len(submissions_file['submissions'].keys())
+                #submissions_file['submissions'][new_id] = {}
+                new_id = str(len(submissions_file.keys))
                 submissions_file[new_id] = {}
-                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
-                    pf.truncate(0)  # Delete file contents (to avoid appending)
-                    pf.seek(0)      # Move file pointer to start of file
-                    json.dump(submissions_file, pf, indent=2, sort_keys=False)
+                pf.truncate(0)  # Delete file contents (to avoid appending)
+                pf.seek(0)      # Move file pointer to start of file
+                json.dump(submissions_file, pf, indent=2, sort_keys=False)
+            file_not_saved=False
+            
+            
+            #try:
+            #    with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+            #        submissions_file = json.load(pf)
+            #        #new_id = len(submissions_file['submissions'].keys())
+            #        #submissions_file['submissions'][new_id] = {}
+            #        new_id = len(submissions_file.keys())
+            #        submissions_file[new_id] = {}
+            #        pf.truncate(0)  # Delete file contents (to avoid appending)
+            #        pf.seek(0)      # Move file pointer to start of file
+            #        json.dump(submissions_file, pf, indent=2, sort_keys=False)
+            #    file_not_saved=False
+            #except json.decoder.JSONDecodeError:
+            #    # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
+            #    # using backups file from submissions_dir
+            #    submissions_file = self.rebuild_submission_from_backup()
+            #    new_id = len(submissions_file.keys())
+            #    submissions_file[new_id] = {}
+            #    with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+            #        pf.truncate(0)  # Delete file contents (to avoid appending)
+            #        pf.seek(0)      # Move file pointer to start of file
+            #        json.dump(submissions_file, pf, indent=2, sort_keys=False)
             #self._submissions = submissions_file['submissions']
             self._submissions = submissions_file
 
@@ -502,7 +518,7 @@ class _DAMetaData:
             #    pf.truncate(0)  # Delete file contents (to avoid appending)
             #    pf.seek(0)      # Move file pointer to start of file
             #    json.dump(submission_backup, pf, indent=2, sort_keys=False)
-            self._store_submissions_backup(new_id,{})
+            self._store_submissions_backup(new_id,self._submissions[new_id])
 
             return new_id
 
@@ -560,7 +576,7 @@ class _DAMetaData:
             list_backup = self.submissions_dir.glob(f'{self.name}.submission.*.json')
             
             for backup_file in list_backup:
-                submission_id = int(str(backup_file).split('.')[-2])
+                submission_id = str(backup_file).split('.')[-2]
                 val = self._read_submissions_backup(submission_id)
                 submission.update({submission_id:val[submission_id]})
                 #try:
