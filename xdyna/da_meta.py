@@ -562,7 +562,7 @@ class _DAMetaData:
             for backup_file in list_backup:
                 submission_id = int(str(backup_file).split('.')[-2])
                 val = self._read_submissions_backup(submission_id)
-                submission[submission_id] = val[submission_id]
+                submission.update({submission_id:val[submission_id]})
                 #try:
                 #    with ProtectFile(Path(self.submission_backup(submission_id)) , 'r+', wait=0.005) as pf_backup:
                 #        val = json.load(pf_backup)
@@ -722,7 +722,7 @@ class _DAMetaData:
                     val['warnings'].append('Backup corrupted and reset!')
                 pf.truncate(0)  # Delete file contents (to avoid appending)
                 pf.seek(0)      # Move file pointer to start of file
-            submission_backup[submission_id].update(val)
+            submission_backup.update({submission_id:val})
             json.dump(submission_backup, pf, indent=2, sort_keys=False)
     
     def _paths_to_strings(self, meta, ignore=[]):
