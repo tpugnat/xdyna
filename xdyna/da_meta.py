@@ -4,7 +4,7 @@ import json
 from os import listdir, makedirs
 from os.path import isfile, join
 
-from .protectfile import ProtectFile
+from xaux import ProtectFile
 
 
 # The DAMeta class stores the info of the DA

@@ -22,7 +22,7 @@ import xpart as xp
 # from .postprocess_tools import *
 from .postprocess_tools import trapz, simpson, alter_simpson, compute_da_1D, compute_da_2D, compute_da_4D, fit_DA
 from .postprocess_tools import _da_raw, _da_smoothing, select_model
-from .protectfile import ProtectFile
+from xaux import ProtectFile
 from .da_meta import _DAMetaData
 from .geometry import _bleed, distance_to_polygon_2D
 
