@@ -691,10 +691,10 @@ class _DAMetaData:
             elif self.submission_backup('0').exists():
                 val = self.rebuild_submission_from_backup()
                 with ProtectFile(self.submissions_file, 'x+', wait=0.005) as pf:
-                    pf.truncate(0)  # Delete file contents (to avoid appending)
-                    pf.seek(0)      # Move file pointer to start of file
                     json.dump(val, pf, indent=2, sort_keys=False)
-                
+            else:
+                with ProtectFile(self.submissions_file, 'x+', wait=0.005) as pf:
+                    json.dump(val, pf, indent=2, sort_keys=False)
             setattr(self, '_submissions', val )
 
     # Allowed on parallel process (but only if each process updates only the log attached to its unique ID).
