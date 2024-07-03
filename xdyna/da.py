@@ -82,6 +82,7 @@ class DA:
 #         self._t_steps = None
         self._da = None
         self._border = None
+        self._border_id = None
         self._lower_davsturns = None
         self._upper_davsturns = None
         self._da_evol = None
@@ -1374,7 +1375,7 @@ class DA:
 
     # Not allowed on parallel process
     def calculate_da(self, at_turn=None, angular_precision=10, smoothing=True, list_seed=None,
-                     interp_order='1D', interp_method='trapz'):
+                     interp_order='1D', interp_method='trapz', save=True):
         '''Compute the DA upper and lower estimation at a specific turn in the form of a pandas table:
     ['turn','border','avg','min','max']
         
@@ -1388,6 +1389,7 @@ or for multiseeds:
     smoothing:         True in order to smooth the borders for the random particle distribution (Default=True).
     interp_order:      Interpolation order for the DA average: '1D', '2D', '4D' (Default='1D').
     interp_method:     Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson' (Default='1D').
+    save:          Save the da and the border in files if True (Default=True).
           
     Warning
     ----------
@@ -1427,7 +1429,9 @@ or for multiseeds:
             self._da=pd.DataFrame(columns=['t','seed', 'DA lower','DAmin lower','DAmax lower','DA upper','DAmin upper','DAmax upper'])
 #             self._da=pd.DataFrame(columns=['t','seed', 'ang','amp','ang low','amp low', \
 #                                            'ang up','amp up'])
-            self._border=pd.DataFrame(columns=['t','seed', 'ang lower','amp lower','ang upper','amp upper'])
+
+            self._border=pd.DataFrame(columns=['t','seed', 'id lower','id upper'])
+#             self._border=pd.DataFrame(columns=['t','seed', 'ang lower','amp lower','ang upper','amp upper'])
 #             if self.meta.nseeds==0:
 #                 self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
 #                 self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
@@ -1448,19 +1452,31 @@ or for multiseeds:
         if self.meta.nseeds==0:
             list_seed=[ 0 ]
             list_data=[ data ]
+            list_new_da     = np.array([None])
+            list_new_border = np.array([None])
         else:
             if list_seed is None or len(list_seed)==0:
                 list_seed=[s for s in range(1,self.meta.nseeds+1)]
             list_data=[ data[data.seed==s].copy() for s in list_seed ]
+            list_new_da     = np.array([None]  * self.meta.nseeds)
+            list_new_border = np.array([None]  * self.meta.nseeds)
         ang_range=(self.meta.ang_min,self.meta.ang_max)
+        mask_da     = [True] * len(self._da)
+        mask_border = [True] * len(self._border)
         
         # Run DA raw border detection
 #         sys.stdout.write(f'seed {0:>3d}')
+        idx = 0
         for ss,dd in zip(list_seed,list_data):
 #             sys.stdout.write(f'\rseed {seed:>3d}')
 
             # Get DA raw estimation
-            border_min, border_max =_da_raw(dd,at_turn)
+#             border_min, border_max =_da_raw(dd,at_turn,seed,compute_da, ang_range)
+            list_new_da[idx], list_new_border[idx] =_da_raw(dd, at_turn, ss, compute_da, ang_range)
+    
+            mask_da     = mask_da     & ~( ( self._da.seed    ==ss ) & ( self._da.t    ==at_turn ) )
+            mask_border = mask_border & ~( ( self._border.seed==ss ) & ( self._border.t==at_turn ) )
+            idx += 1
 
 #             # Detect range to look at the DA border
 #             losses =dd.nturns<at_turn
@@ -1569,7 +1585,10 @@ or for multiseeds:
                 row=f't{at_turn}'
             else:
                 row=f't{at_turn} s{ss}'
-            self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
+#             self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
+            
+        self._da     = pd.concat([self._da[    mask_da    ], *list_new_da    ], ignore_index=True)
+        self._border = pd.concat([self._border[mask_border], *list_new_border], ignore_index=True)
 #             new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
 #                                  'DAmin lower': [min(border_min['amplitude'])],
 #                                  'DAmax lower': [max(border_min['amplitude'])],
@@ -1626,17 +1645,16 @@ or for multiseeds:
 #                 self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                 self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
         sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
-        
-        
-#         if self.meta.nseeds==0:
-#             return self._lower_davsturns.border,self._lower_davsturns.border
-#         else:
-#             return self._lower_davsturns[ss].border,self._lower_davsturns[ss].border
+    
+        if save:
+            self.write_da()
+            self.write_border()
 
 
     
     # Not allowed on parallel process
-    def calculate_davsturns(self,from_turn=1e3,to_turn=None, bin_size=1, interp_order='1D', interp_method='trapz'):#,nsteps=None
+    def calculate_davsturns(self, from_turn=1e3, to_turn=None, bin_size=1, 
+                            interp_order='1D', interp_method='trapz', save=True):#,nsteps=None
         '''Compute the DA upper and lower evolution from a specific turn to another in the form of a pandas table:
     ['turn','border','avg','min','max']
     
@@ -1651,6 +1669,7 @@ or for multiseeds:
     bin_size:      The turns is slice by this number (Default=1).
     interp_order:  Interpolation order for the DA average: '1D', '2D', '4D' (Default='1D').
     interp_method: Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson' (Default='1D').
+    save:          Save the da and the border in files if True (Default=True).
 '''
             
         # Initialize input and da array
@@ -1682,7 +1701,9 @@ or for multiseeds:
         self.read_da()
         self.read_border()
         if self._da is None or to_turn not in self._da['t']:
-            self.calculate_da(at_turn=to_turn,smoothing=True)
+            self.calculate_da(at_turn=to_turn, smoothing=True, 
+                              interp_order=interp_order, interp_method=interp_method, save=False) 
+            
             
         # Load particle data
         data = self.survival_data.copy()
@@ -1704,12 +1725,19 @@ or for multiseeds:
             # Remove turns already computed
             if self.meta.nseeds==0:
                 lturns=np.sort(list(set(lturns) - set(self.t_steps)))
+                list_new_da     = np.array([None for ii in range(len(lturns))])
+                list_new_border = np.array([None for ii in range(len(lturns))])
             else:
                 lturns=np.sort(list(set(lturns) - set(np.concatenate(list(self.t_steps.values())))))
+                list_new_da     = np.array([None for ii in range(len(lturns)*self.meta.nseeds)])
+                list_new_border = np.array([None for ii in range(len(lturns)*self.meta.nseeds)])
+            mask_da     = [True] * len(self._da)
+            mask_border = [True] * len(self._border)
                 
 #             te = time.time(); print(f"calculate_davsturns: pre loop {te-ti:.4}s") ; ti = te;
 
             # Loop in turn to compute the da
+            idx = 0
             for at_turn in reversed(lturns):
                 # Select the list of seed to comput at this turn
 #                 if self.meta.nseeds==0 or at_turn==from_turn or at_turn==to_turn or bin_size>1:
@@ -1737,14 +1765,19 @@ or for multiseeds:
 #                     sys.stdout.write(f'\rseed {seed:>3d}')
 
                     # Get DA raw estimation
-                    border_min, border_max =_da_raw(dd,at_turn)
+#                     border_min, border_max =_da_raw(dd,at_turn,seed,compute_da, ang_range)
+                    list_new_da[idx], list_new_border[idx] =_da_raw(dd,at_turn,ss,compute_da, ang_range)
 #                     te = time.time(); print(f"calculate_davsturns: da_raw in loop2 {te-ti:.4}s") ; ti = te;
             
-                    self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
+#                     self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
 #                     te = time.time(); print(f"calculate_davsturns: set_da in loop2 {te-ti:.4}s") ; ti = te;
                     
+                    mask_da     = mask_da     & ~( ( self._da.seed    ==ss ) & ( self._da.t    ==at_turn ) )
+                    mask_border = mask_border & ~( ( self._border.seed==ss ) & ( self._border.t==at_turn ) )
+                    idx += 1
                 sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
-                
+            self._da     = pd.concat([self._da[    mask_da    ], *list_new_da    ], ignore_index=True)
+            self._border = pd.concat([self._border[mask_border], *list_new_border], ignore_index=True)
 #                 sys.stdout.write(f'\r')
         else:
             # Transform data from x-y format to ang-amp
@@ -2028,8 +2061,9 @@ or for multiseeds:
 #             sys.stdout.write(f'\rCompute turn-by-turn statistic... Done!\n')
 #             self._lower_davsturns['stat']=stat_lower_davsturns
 #             self._upper_davsturns['stat']=stat_upper_davsturns
-        self.write_da()
-        self.write_border()
+        if save:
+            self.write_da()
+            self.write_border()
 
     # =================================================================
     # ========================== Fit models ===========================

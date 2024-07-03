@@ -267,7 +267,7 @@ def select_model(model,model_default={},model_boundary={},model_mask=Model_user_
 
 # DA raw estimation
 # --------------------------------------------------------
-def _da_raw(data,at_turn):
+def _da_raw(data,at_turn,seed,compute_da, ang_range):
     # Detect range to look at the DA border
     losses =data.nturns<at_turn
     min_loss=data.amplitude[losses].min()
@@ -370,9 +370,37 @@ def _da_raw(data,at_turn):
             id_min[idx] = data.amplitude[mask_surv].idxmax()
 
     # Clean array
-    id_min=id_min[np.isfinite(id_min)]
-    id_max=id_max[np.isfinite(id_max)]
-    return data.loc[id_min,['amplitude','angle','id']], data.loc[id_max,['amplitude','angle','id']]
+    id_min=id_min[np.isfinite(id_min)];
+    id_max=id_max[np.isfinite(id_max)];
+    #return data.loc[id_min,['amplitude','angle','id']], data.loc[id_max,['amplitude','angle','id']]
+    
+    border_min = data.loc[id_min,['amplitude','angle','id']]
+    border_max = data.loc[id_max,['amplitude','angle','id']]
+    
+    new_da=pd.DataFrame({'DA lower':    [compute_da(border_min['angle'], border_min['amplitude'], ang_range)],
+                         'DAmin lower': [min(border_min['amplitude'])],
+                         'DAmax lower': [max(border_min['amplitude'])],
+                         'DA upper':    [compute_da(border_max['angle'], border_max['amplitude'], ang_range)],
+                         'DAmin upper': [min(border_max['amplitude'])],
+                         'DAmax upper': [max(border_max['amplitude'])],
+                         'seed':        [seed],
+                         't':           [at_turn],
+                        })
+    
+#     print(f"{border_min=}")
+#     print(f"{border_min.id=}")
+
+    new_border = pd.DataFrame([],index=range(max(len(border_min),len(border_max))),columns=['id lower','id upper','seed','t'])
+    new_border.loc[:len(border_min),'id lower'] = border_min.id.values
+    new_border.loc[:len(border_max),'id upper'] = border_max.id.values
+    new_border.seed = seed
+    new_border.t = at_turn
+#     print(f"{new_border=}")
+    
+#     raise TypeError("Test")
+    
+    return new_da , new_border
+
 # --------------------------------------------------------
 
     
