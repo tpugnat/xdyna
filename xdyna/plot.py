@@ -139,13 +139,15 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
         at_turn=DA.max_turns
     if at_turn > DA.max_turns:
         raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
-    if DA._lower_davsturns is None:
+    if DA._border is None:
         DA.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=True)
 
-    if "angle" not in DA.survival_data.columns:
-        angle= np.arctan2(DA.survival_data['y'],DA.survival_data['x'])*180/np.pi
+    data = DA.survival_data.copy()
+    if "angle" not in data.columns:
+        data['angle'] = np.arctan2(data['y'],data['x'])*180/np.pi
     else:
-        angle= np.array(DA.survival_data.angle)
+        data['angle'] = np.array(data.angle)
+    angle=np.unique(data.angle)
     ang_range=(min(angle),max(angle))
 
     if DA.meta.nseeds==0:
@@ -155,12 +157,12 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
 
     at_turn=max(border.t[border.t<=at_turn])
 
-    mask_lower=(border.t==at_turn) & (~border['ang lower'].isna())
-    mask_upper=(border.t==at_turn) & (~border['ang upper'].isna())
-    fit_min=fit_DA(border.loc[mask_lower,'ang lower'],
-                   border.loc[mask_lower,'amp lower'], ang_range)
-    fit_max=fit_DA(border.loc[mask_upper,'ang upper'], 
-                   border.loc[mask_upper,'amp upper'], ang_range)
+    mask_lower=(border.t==at_turn) & (~border['id lower'].isna())
+    mask_upper=(border.t==at_turn) & (~border['id upper'].isna())
+    fit_min=fit_DA(data.angle[border.loc[mask_lower,'id lower']],
+                   data.amplitude[border.loc[mask_lower,'id lower']], ang_range)
+    fit_max=fit_DA(data.angle[border.loc[mask_lower,'id upper']], 
+                   data.amplitude[border.loc[mask_lower,'id upper']], ang_range)
 
     angle  = np.sort(angle)
     amplitude_min=fit_min(angle)
