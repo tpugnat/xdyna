@@ -177,6 +177,7 @@ class _DAMetaData:
         self._use_files        = use_files
         self.path              = path
         self._store_properties = True
+        self._submissions = {}
 
         # Initialise defaults
         for field in self._defaults:
@@ -639,7 +640,7 @@ class _DAMetaData:
             # If those values in the file diverge from the actual ones, the file needs to be updated
             # (this happens e.g. if the study is moved to a different folder)
             need_to_store = False
-            with ProtectFile(self.meta_file, 'r+') as pf:
+            with ProtectFile(self.meta_file.resolve(), 'r+') as pf:
                 meta = json.load(pf)
                 # clean up paths in meta
                 if 'submissions' in meta:
