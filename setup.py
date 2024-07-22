@@ -41,12 +41,15 @@ setup(
     install_requires=[
         'numpy>=1.0',
         "pandas>=2.0",
+        'matplotlib',
+        'pyarrow',
         'scipy',
 #         'json',
         'xobjects',
         'xdeps',
-        'xpart',
         'xtrack',
+        'xpart',
+        'xaux',
         'cpymad',
         ],
     extras_require={

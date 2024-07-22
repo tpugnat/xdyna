@@ -882,8 +882,8 @@ class DA:
                 if store_line:
                     if self.line_file.exists():
                         print(f"Warning: line_file {self.line_file} exists and is being overwritten.")
+                    data = {str(seed): 'Running MAD-X' for seed in seeds}
                     with ProtectFile(self.line_file, 'w') as pf:
-                        data = {str(seed): 'Running MAD-X' for seed in seeds}
                         json.dump(data, pf, cls=xo.JEncoder, indent=True)
             else:
                 if seeds is not None:
@@ -898,10 +898,10 @@ class DA:
                     created = False
                     if not self.line_file.exists():
                         try:
+                            if seeds is None:
+                                seeds = [ 1 ]
+                            data = {str(seed): 'Running MAD-X' for seed in seeds}
                             with ProtectFile(self.line_file, 'x') as fid:
-                                if seeds is None:
-                                    seeds = [ 1 ]
-                                data = {str(seed): 'Running MAD-X' for seed in seeds}
                                 json.dump(data, fid, cls=xo.JEncoder, indent=True)
                             created = True
                         except FileExistsError:
@@ -2342,20 +2342,38 @@ or for multiseeds:
     def _create_job(self, npart=None, logging=True, force_single_seed_per_job=None):
         def _get_seeds_and_stuff(npart, logging):
             mask = self._surv['submitted'] == False
+#             if npart is None:
+#                 this_part_ids = self._surv[mask].index
+#             else:
+#                 this_part_ids = self._surv[mask].index[:npart]
+#             if self.meta.nseeds > 0:
+#                 df = self._surv.loc[this_part_ids]
+#                 seeds = np.unique(df['seed'])
+#                 if force_single_seed_per_job:
+#                     # Only take jobs from one seed
+#                     seeds = seeds[:1]
+#                     mask = df['seed'] == seeds[0]
+#                     this_part_ids = df.loc[mask].index
+#             else:
+#                 seeds = None
+            # Select the seeds before such that if particles are not in the right order in
+            # _surv, they are still taken into consideration (ex: pair particles)
+            if self.meta.nseeds > 0:
+#                 df = self._surv.loc[mask]
+                seeds = np.unique(self._surv.loc[mask,'seed'])
+                if force_single_seed_per_job:
+                    # Only take jobs from one seed
+                    seeds = seeds[:1]
+                    mask = (mask) & (self._surv['seed'] == seeds[0])
+            else:
+                seeds = None
             if npart is None:
                 this_part_ids = self._surv[mask].index
             else:
                 this_part_ids = self._surv[mask].index[:npart]
-            if self.meta.nseeds > 0:
-                df = self._surv.loc[this_part_ids]
-                seeds = np.unique(df['seed'])
-                if force_single_seed_per_job:
-                    # Only take jobs from one seed
-                    seeds = seeds[:1]
-                    mask = df['seed'] == seeds[0]
-                    this_part_ids = df.loc[mask].index
-            else:
-                seeds = None
+
+
+
             # Quit the job if no particles need to be submitted
             if len(this_part_ids) == 0:
                 print("No more particles to submit! Exiting...")

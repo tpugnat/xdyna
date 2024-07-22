@@ -20,8 +20,8 @@ scipy = ">=1.9.3"
 pandas = ">=1.5.1"
 xobjects = ">=0.2.6"
 xdeps = ">=0.1.1"
-xpart = ">=0.15.0"
 xtrack = ">=0.36.5"
+xpart = ">=0.15.0"
 xfields = ">=0.12.1"
 
 [tool.poetry.dev-dependencies]
