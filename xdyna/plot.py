@@ -161,8 +161,8 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
     mask_upper=(border.t==at_turn) & (~border['id upper'].isna())
     fit_min=fit_DA(data.angle[border.loc[mask_lower,'id lower']],
                    data.amplitude[border.loc[mask_lower,'id lower']], ang_range)
-    fit_max=fit_DA(data.angle[border.loc[mask_lower,'id upper']], 
-                   data.amplitude[border.loc[mask_lower,'id upper']], ang_range)
+    fit_max=fit_DA(data.angle[border.loc[mask_upper,'id upper']],
+                   data.amplitude[border.loc[mask_upper,'id upper']], ang_range)
 
     angle  = np.sort(angle)
     amplitude_min=fit_min(angle)
