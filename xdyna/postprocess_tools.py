@@ -389,10 +389,11 @@ def _da_raw(data,at_turn,seed,compute_da, ang_range):
     
 #     print(f"{border_min=}")
 #     print(f"{border_min.id=}")
-
     new_border = pd.DataFrame([],index=range(max(len(border_min),len(border_max))),columns=['id lower','id upper','seed','t'])
-    new_border.loc[:len(border_min),'id lower'] = border_min.id.values
-    new_border.loc[:len(border_max),'id upper'] = border_max.id.values
+
+    # Strangely len(dat.loc[:len(array),:]) = len(dat) but len(dat.loc[0:len(array),:]) = len(array)+1
+    new_border.loc[0:len(border_min)-1,'id lower'] = border_min.id.values
+    new_border.loc[0:len(border_max)-1,'id upper'] = border_max.id.values
     new_border.seed = seed
     new_border.t = at_turn
 #     print(f"{new_border=}")

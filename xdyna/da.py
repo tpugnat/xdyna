@@ -1251,6 +1251,24 @@ class DA:
     def da_max_upper(self, t=None, seed=None):
         return self._get_da_prop(t=t, seed=seed, prop='DAmax upper')
 
+    def da_projection(self, t=None):
+        if t is None:
+            t = self.max_turns
+        if self.meta.nseeds == 0:
+            lturns = self.t_steps
+            closest_t = max(lturns[0][lturns[0] <= t])
+            da = self._da[(self._da.t == closest_t)]
+            return da['DAmin lower'].values, da['DA lower'].values, da['DAmax lower'].values
+
+        else:
+            lturns = self.t_steps
+            da = pd.DataFrame([],index=range(1,self.meta.nseeds+1), columns=self._da.columns)
+            for ss in range(1,self.meta.nseeds+1):
+                closest_t = max(lturns[ss][lturns[ss] <= t])
+                da.loc[ss,self._da.columns] = self._da[(self._da.t == closest_t) & (self._da.seed == ss)].values
+            return da['DAmin lower'].min(), da['DA lower'].mean(), da['DAmax lower'].max(), \
+                   da.loc[:,['seed','DA lower']].rename(columns = {'DA lower':'DA'})
+
     def border(self, t=None, seed=None):
         ang = self._get_da_prop(t=t, seed=seed, prop='ang lower', data=self._border, \
                               enforce_single=False)
@@ -1431,20 +1449,10 @@ or for multiseeds:
             self._da = None
             self._border = None
         if self._da is None:
-#             self._da=pd.DataFrame(columns=['t','seed', 'DA','DAmin','DAmax','DA low','DAmin low','DAmax low', \
-#                                            'DA up','DAmin up','DAmax up'])
-            self._da=pd.DataFrame(columns=['t','seed', 'DA lower','DAmin lower','DAmax lower','DA upper','DAmin upper','DAmax upper'])
-#             self._da=pd.DataFrame(columns=['t','seed', 'ang','amp','ang low','amp low', \
-#                                            'ang up','amp up'])
+            self._da=pd.DataFrame(columns=['t','seed', 'DA lower','DAmin lower','DAmax lower',
+                                           'DA upper','DAmin upper','DAmax upper'])
 
             self._border=pd.DataFrame(columns=['t','seed', 'id lower','id upper'])
-#             self._border=pd.DataFrame(columns=['t','seed', 'ang lower','amp lower','ang upper','amp upper'])
-#             if self.meta.nseeds==0:
-#                 self._lower_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
-#                 self._upper_davsturns=pd.DataFrame(columns=['turn','border','avg','min','max'])
-#             else:
-#                 self._lower_davsturns={s:pd.DataFrame(columns=['turn','border','avg','min','max']) for s in range(1,self.meta.nseeds+1)}
-#                 self._upper_davsturns={s:pd.DataFrame(columns=['turn','border','avg','min','max']) for s in range(1,self.meta.nseeds+1)}
         if at_turn in self._da['t']:
             return
         
@@ -1482,6 +1490,10 @@ or for multiseeds:
             # Get DA raw estimation
 #             border_min, border_max =_da_raw(dd,at_turn,seed,compute_da, ang_range)
             list_new_da[idx], list_new_border[idx] =_da_raw(dd, at_turn, ss, compute_da, ang_range)
+
+            if self.da_type == 'radial' and list_new_border[idx].isnull().values.any():
+                print('Warning: the sample was too small and this estimation will be biased ' \
+                      +f'(seed {ss}, at_turn {ss}, nb missing values: {list_new_border[idx].isnull().values.sum()})!')
     
             mask_da     = mask_da     & ~( ( self._da.seed    ==ss ) & ( self._da.t    ==at_turn ) )
             mask_border = mask_border & ~( ( self._border.seed==ss ) & ( self._border.t==at_turn ) )
@@ -2341,7 +2353,7 @@ or for multiseeds:
     # Allowed on parallel process
     def _create_job(self, npart=None, logging=True, force_single_seed_per_job=None):
         def _get_seeds_and_stuff(npart, logging):
-            mask = self._surv['submitted'] == False
+            mask = (self._surv['submitted'] == False)
 #             if npart is None:
 #                 this_part_ids = self._surv[mask].index
 #             else:
@@ -2358,21 +2370,22 @@ or for multiseeds:
 #                 seeds = None
             # Select the seeds before such that if particles are not in the right order in
             # _surv, they are still taken into consideration (ex: pair particles)
-            if self.meta.nseeds > 0:
-#                 df = self._surv.loc[mask]
-                seeds = np.unique(self._surv.loc[mask,'seed'])
-                if force_single_seed_per_job:
-                    # Only take jobs from one seed
-                    seeds = seeds[:1]
-                    mask = (mask) & (self._surv['seed'] == seeds[0])
+            if any(mask):
+                if self.meta.nseeds > 0:
+    #                 df = self._surv.loc[mask]
+                    seeds = np.unique(self._surv.loc[mask,'seed'])
+                    if force_single_seed_per_job:
+                        # Only take jobs from one seed
+                        seeds = seeds[:1]
+                        mask = (mask) & (self._surv['seed'] == seeds[0])
+                else:
+                    seeds = None
             else:
-                seeds = None
+                seeds=-1
             if npart is None:
                 this_part_ids = self._surv[mask].index
             else:
                 this_part_ids = self._surv[mask].index[:npart]
-
-
 
             # Quit the job if no particles need to be submitted
             if len(this_part_ids) == 0:
