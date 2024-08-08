@@ -79,12 +79,8 @@ class DA:
         # Initialise DA data
         self.memory_threshold = kwargs.pop('memory_threshold', 1e9)
         self._surv = None
-#         self._t_steps = None
         self._da = None
         self._border = None
-#         self._border_id = None
-#         self._lower_davsturns = None
-#         self._upper_davsturns = None
         self._da_evol = None
         self._da_model = None
         self._active_job = -1
@@ -110,7 +106,7 @@ class DA:
             self.read_surv()
         if self._surv is None:  # also nothing on file
             return None
-        
+
         if self.da_type == 'radial':
             if self.da_dimension == 2:
                 view_cols = ['ang_xy', 'r_xy']
@@ -135,10 +131,10 @@ class DA:
                 view_cols = ['x_norm_in', 'px_norm_in', 'y_norm_in', 'py_norm_in', 'zeta_in', 'delta_in']
         else:
             view_cols = ['x_norm_in', 'px_norm_in', 'y_norm_in', 'py_norm_in', 'zeta_in', 'delta_in']
-        
+
         if self.meta.nseeds > 0:
             view_cols += ['seed']
-        
+
         if self.meta.pairs_shift == 0:
             view_cols += ['nturns', 'state']
             df = self._surv[view_cols]
@@ -152,7 +148,7 @@ class DA:
             df['state2'] = np.array(self._surv.loc[~orig,'state'])
             df['nturns'] = df.loc[:,['nturns1','nturns2']].min(axis=1)
             df['state']  = df.loc[:,['state1','state2']].min(axis=1)
-        
+
         return df.rename(columns = {
                     'x_norm_in':'x', 'px_norm_in':'px', 'y_norm_in':'y', 'py_norm_in':'py', 'delta_in':'delta', \
                     'ang_xy':'angle', 'ang_xpx':'angle_x', 'ang_ypy':'angle_y', 'r_xy':'amplitude', 'r_xpxypy': 'amplitude' \
@@ -253,7 +249,7 @@ class DA:
     @property
     def line(self):
         return self._line
-            
+
     @line.setter
     def line(self, line):
         if line is None:
@@ -397,7 +393,7 @@ class DA:
                         x=None, px=None, y=None, py=None, zeta=None, delta=None,
                         normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
         """Let user provide initial coordinates for each plane.
-    
+
     Parameters
     ----------
     x:               Horizontal normalised position in [sigma]. 
@@ -462,7 +458,7 @@ class DA:
                                 px_norm=0, py_norm=0, zeta=0, delta=0.00027,
                                 normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
         """Generate the initial conditions in a 2D X-Y grid.
-    
+
     Parameters
     ----------
     x_min:           Min range in the x-plan in [sigma]. 
@@ -547,7 +543,7 @@ class DA:
                                 px_norm=0, py_norm=0, zeta=0, delta=0.00027,
                                 normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None, open_border=True):
         """Generate the initial conditions in a 2D polar grid.
-    
+
     Parameters
     ----------
     angles:          Number of angles per seed.
@@ -555,8 +551,8 @@ class DA:
     r_max:           Max range of amplitude in [sigma]. 
     r_step:          Amplitude step size in [sigma] (Default=None).
     r_num:           Number of step in amplitude (Default=None). 
-    ang_min:         Lower range of the angulare distribution in [deg] (Default=0).
-    ang_max:         Upper range of the angulare distribution in [deg] (Default=90). 
+    ang_min:         Lower range of the angular distribution in [deg] (Default=0).
+    ang_max:         Upper range of the angular distribution in [deg] (Default=90). 
     px_norm:         Horizontal normalised momentum (Default=0). 
     py_norm:         Vertical normalised momentum (Default=0). 
     zeta:            Longitudinal phase (Default=0). 
@@ -628,7 +624,7 @@ class DA:
     def generate_random_initial(self, *, num_part=1000, r_max=25, px_norm=0, py_norm=0, zeta=0, delta=0.00027, ang_min=0,
                                 ang_max=90, normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
         """Generate the initial conditions in a 2D random grid.
-    
+
     Parameters
     ----------
     num_part:        Number of particle per seed (Default=1000).
@@ -1031,7 +1027,7 @@ class DA:
             if self.line.tracker is None:
                 print("Building tracker.")
                 self.line.build_tracker()
-                
+
             # Select initial particles
             context = self.line.tracker._buffer.context
             x_norm  = self._surv.loc[part_ids, 'x_norm_in'].to_numpy()
@@ -1047,7 +1043,7 @@ class DA:
                                 x_norm, y_norm, px_norm, py_norm, zeta, delta, 
                                 self.nemitt_x, self.nemitt_y, self.meta.max_turns)
             self._append_job_log('output', datetime.datetime.now().isoformat() + '  Done tracking job ' + str(job_id) + '.', logging=logging)
-                
+
             # Store results
             part_id   = context.nparray_from_context_array(part.particle_id)
             sort      = np.argsort(part_id)
@@ -1093,7 +1089,7 @@ class DA:
                 if self.line[seed].tracker is None:
                     print(f"Building tracker for seed {seed}.")
                     self.line[seed].build_tracker()
-                    
+
                 # Select initial particles
                 context = self.line[seed].tracker._buffer.context
                 part_ids_seed = part_ids[self._surv.loc[part_ids, 'seed']==seed]
@@ -1324,20 +1320,20 @@ class DA:
 #     def get_lower_da(self,at_turn=None,seed=None):
 #         '''Return the DA lower estimation at a specific turn in the form of a DataFrame with the following columns:
 #         ['turn','border','avg','min','max']
-    
+
 #     Parameters
 #     ----------
 #     at_turn: Turn at which this estimation must be computed (Default=max_turns).
 #     seed:    For multiseed simulation, the seed must be specified (Default=None).
 # '''
-          
+
 #         if at_turn is None:
 #             at_turn=self.max_turns
 #         if self._da is None:
 #             self.calculate_da(at_turn=at_turn,smoothing=True)
 #         if self.meta.nseeds!=0 and seed is None:
 #             raise ValueError('Please specify the seed number for multiseeds simulation.')
-        
+
 #         if self.meta.nseeds==0:
 #             davsturns=self._lower_davsturns
 #         else:
@@ -1349,27 +1345,27 @@ class DA:
 #     def get_upper_da(self,at_turn=None,seed=None):
 #         '''Return the DA upper estimation at a turn in the form of a DataFrame with the following columns:
 #         ['turn','border','avg','min','max']
-    
+
 #     Parameters
 #     ----------
 #     at_turn: Turn at which this estimation must be computed (Default=max_turns).
 #     seed:    For multiseed simulation, the seed must be specified (Default=None).
 # '''
-          
+
 #         if at_turn is None:
 #             at_turn=self.max_turns
 #         if self._da is None:
 #             self.calculate_da(at_turn=at_turn,smoothing=True)
 #         if self.meta.nseeds!=0 and seed is None:
 #             raise ValueError('Please specify the seed number for multiseeds simulation.')
-        
+
 #         if self.meta.nseeds==0:
 #             davsturns=self._upper_davsturns
 #         else:
 #             davsturns=self._upper_davsturns[seed]
 #         return davsturns.loc[davsturns.loc[davsturns.turn<=at_turn,'turn'].astype(float).idxmax(),:]
-    
-    
+
+
     def _set_da_and_border(self,seed,at_turn,border_min,border_max,ang_range):
         new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
                              'DAmin lower': [min(border_min['amplitude'])],
@@ -1396,10 +1392,10 @@ class DA:
                      interp_order='1D', interp_method='trapz', force=False, save=True):
         '''Compute the DA upper and lower estimation at a specific turn in the form of a pandas table:
     ['turn','border','avg','min','max']
-        
+
 or for multiseeds:
     { seed:['turn','border','avg','min','max'], 'stat':['turn','avg','min','max'] }
-    
+
     Parameters
     ----------
     at_turn:           Turn at which this estimation must be computed (Default=max_turns).
@@ -1409,7 +1405,7 @@ or for multiseeds:
     interp_method:     Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson' (Default='1D').
     force:             Reset the da analysis (Default=False).
     save:              Save da and border DataFrames in files (Default=True).
-          
+
     Warning
     ----------
     The borders might change after using postprocess as it imposes turn-by-turn monoticity.
@@ -1435,13 +1431,13 @@ or for multiseeds:
             interp=alter_simpson
         else:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
-        
+
         # Initialize input and da array
         if at_turn is None:
             at_turn=self.max_turns
         if at_turn > self.max_turns:
             raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
-            
+
         if not force:
             self.read_da()
             self.read_border()
@@ -1455,7 +1451,7 @@ or for multiseeds:
             self._border=pd.DataFrame(columns=['t','seed', 'id lower','id upper'])
         if at_turn in self._da['t']:
             return
-        
+
         # Select data per seed if needed
         data=self.survival_data.copy()
         data['id']= data.index
@@ -1480,7 +1476,7 @@ or for multiseeds:
         ang_range=(self.meta.ang_min,self.meta.ang_max)
         mask_da     = [True] * len(self._da)
         mask_border = [True] * len(self._border)
-        
+
         # Run DA raw border detection
 #         sys.stdout.write(f'seed {0:>3d}')
         idx = 0
@@ -1494,7 +1490,7 @@ or for multiseeds:
             if self.da_type == 'radial' and list_new_border[idx].isnull().values.any():
                 print('Warning: the sample was too small and this estimation will be biased ' \
                       +f'(seed {ss}, at_turn {ss}, nb missing values: {list_new_border[idx].isnull().values.sum()})!')
-    
+
             mask_da     = mask_da     & ~( ( self._da.seed    ==ss ) & ( self._da.t    ==at_turn ) )
             mask_border = mask_border & ~( ( self._border.seed==ss ) & ( self._border.t==at_turn ) )
             idx += 1
@@ -1532,13 +1528,13 @@ or for multiseeds:
 #                         border_min['amplitude'].append(max_amplitude_surv)
 #                         border_min['angle'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'angle'].values[0])
 #                         border_min['id'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'id'].values[0])
-                        
+
 #                 elif not section_loss.empty:
 #                     min_amplitude_loss=min(section_loss['amplitude'])
 #                     border_max['amplitude'].append(min_amplitude_loss)
 #                     border_max['angle'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'angle'].values[0])
 #                     border_max['id'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'id'].values[0])
-                    
+
 #                 elif not section_surv.empty:
 #                     max_amplitude_surv=max(section_surv['amplitude'])
 
@@ -1577,18 +1573,18 @@ or for multiseeds:
                             upper=border_min.loc[border_min['angle']==min(border_min['angle'][border_min['angle']>ploss['angle']]),:]
                             lower_amp=lower['amplitude'].tolist()[0] ; lower_ang=lower['angle'].tolist()[0]
                             upper_amp=upper['amplitude'].tolist()[0] ; upper_ang=upper['angle'].tolist()[0]
-                            
+
                             # Remove lower border point too high for the losses
                             if lower_amp < upper_amp:
                                 border_min.drop(index=upper.index.values, inplace=True)
                                 upper=border_min.loc[border_min['angle']==min(border_min['angle'][border_min['angle']>ploss['angle']]),:]
                                 upper_amp=upper['amplitude'].tolist()[0] ; upper_ang=upper['angle'].tolist()[0]
-                                
+
                             else:
                                 border_min.drop(index=lower_amp, inplace=True)
                                 lower=border_min.loc[border_min['angle']==max(border_min['angle'][border_min['angle']<ploss['angle']]),:]
                                 lower_amp=lower['amplitude'].tolist()[0] ; lower_ang=lower['angle'].tolist()[0]
-                                
+
                             # Add surv particle to lower border point near the previous part was removed
                             candidate=surv.loc[(surv['angle']<upper_ang) & (surv['angle']>lower_ang) & (surv['amplitude']<ploss['amplitude']),['id','angle','amplitude']]
                             if not candidate.empty:
@@ -1607,7 +1603,7 @@ or for multiseeds:
             else:
                 row=f't{at_turn} s{ss}'
 #             self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
-            
+
         self._da     = pd.concat([self._da[    mask_da    ], *list_new_da    ], ignore_index=True)
         self._border = pd.concat([self._border[mask_border], *list_new_border], ignore_index=True)
 #             new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
@@ -1618,19 +1614,19 @@ or for multiseeds:
 #                                  'DAmax upper': [max(border_max['amplitude'])]
 #                                 })
 #             self._da=concat(self._da,new_da,seed=ss,t=at_turn)
-            
+
 # #             border_min['seed']=ss; border_min['t']=at_turn;
 #             self._border=concat(self._border,
 #                                 border_min.rename(columns={'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, 
 #                                                   inplace=False),
 #                                 seed=ss,t=at_turn)
-            
+
 # #             border_max['seed']=ss; border_max['t']=at_turn;
 #             self._border=concat(self._border,
 #                                 border_max.rename(columns={'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, 
 #                                                   inplace=False),
 #                                 seed=ss,t=at_turn)
-    
+
 #             self._da.loc[row,'seed']= ss
 #             self._da.loc[row,'t']   = at_turn
 #             self._da.loc[row,'DA lower']   = compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
@@ -1639,50 +1635,50 @@ or for multiseeds:
 #             self._da.loc[row,'DA upper']   = compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
 #             self._da.loc[row,'DAmin upper']= min(border_max['amplitude'])
 #             self._da.loc[row,'DAmax upper']= max(border_max['amplitude'])
-                
+
 #             if self.meta.nseeds==0:
 #                 self._lower_davsturns.loc[at_turn,'turn'  ]=at_turn
 #                 self._lower_davsturns.loc[at_turn,'border']=[ border_min ]
 #                 self._lower_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
 #                 self._lower_davsturns.loc[at_turn,'min'   ]=min(border_min['amplitude'])
 #                 self._lower_davsturns.loc[at_turn,'max'   ]=max(border_min['amplitude'])
-                
+
 #                 self._upper_davsturns.loc[at_turn,'turn'  ]=at_turn
 #                 self._upper_davsturns.loc[at_turn,'border']=[ border_max ]
 #                 self._upper_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
 #                 self._upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                 self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max['amplitude'])
 #             else:
-                
+
 #                 self._lower_davsturns[ss].loc[at_turn,'turn'  ]=at_turn
 #                 self._lower_davsturns[ss].loc[at_turn,'border']=[ border_min ]
 #                 self._lower_davsturns[ss].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
 #                 self._lower_davsturns[ss].loc[at_turn,'min'   ]=min(border_min['amplitude'])
 #                 self._lower_davsturns[ss].loc[at_turn,'max'   ]=max(border_min['amplitude'])
-                
+
 #                 self._upper_davsturns[ss].loc[at_turn,'turn'  ]=at_turn
 #                 self._upper_davsturns[ss].loc[at_turn,'border']=[ border_max ]
 #                 self._upper_davsturns[ss].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
 #                 self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                 self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
         sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
-    
+
         if save:
             self.write_da()
             self.write_border()
 
 
-    
+
     # Not allowed on parallel process
     def calculate_davsturns(self, from_turn=1e3, to_turn=None, bin_size=1, 
                             interp_order='1D', interp_method='trapz', force=False, save=True):#,nsteps=None
         '''Compute the DA upper and lower evolution from a specific turn to another in the form of a pandas table:
     ['turn','border','avg','min','max']
-    
+
 or for multiseeds:
     { seed:['turn','border','avg','min','max'],  'stat':['turn','avg','min','max'] }
-        
-    
+
+
     Parameters
     ----------
     from_turn:     First turn at which this estimation must be computed (Default=1e3).
@@ -1693,7 +1689,7 @@ or for multiseeds:
     force:         Reset the da analysis (Default=False).
     save:          Save da and border DataFrames in files (Default=True).
 '''
-            
+
         # Initialize input and da array
         if to_turn is None:
             to_turn=self.max_turns
@@ -1708,7 +1704,7 @@ or for multiseeds:
             compute_da=compute_da_4D
         else:
             raise ValueError("interp_order must be either: '1D', '2D' or '4D'!")
-            
+
         if interp_method=='trapz':
             interp=trapz
         elif interp_method=='simpson':
@@ -1718,7 +1714,7 @@ or for multiseeds:
         else:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
         ang_range=(self.meta.ang_min,self.meta.ang_max)
-           
+
 #         if self._lower_davsturns is None or (self.meta.nseeds==0 and to_turn not in self._lower_davsturns)or  (self.meta.nseeds>0 and to_turn not in self._lower_davsturns[1]):
         if force:
             self._da = None
@@ -1736,7 +1732,7 @@ or for multiseeds:
         if self.da_type not in ['monte_carlo', 'free']:
             # Create the round_angle columns
             data['round_angle']= data['angle']
-            
+
 #             import time
 #             ti = time.time()
 
@@ -1744,7 +1740,7 @@ or for multiseeds:
             lturns=np.sort(np.unique(bin_size*np.floor(self.survival_data.nturns/bin_size)))
             lturns=lturns[(lturns>from_turn) & (lturns<to_turn)]
             lturns=np.unique([from_turn, *lturns, to_turn]).astype(int)
-            
+
             # Remove turns already computed
             if self.meta.nseeds==0:
                 lturns=np.sort(list(set(lturns) - set(self.t_steps)))
@@ -1756,7 +1752,7 @@ or for multiseeds:
                 list_new_border = np.array([None for ii in range(len(lturns)*self.meta.nseeds)])
             mask_da     = [True] * len(self._da)
             mask_border = [True] * len(self._border)
-                
+
 #             te = time.time(); print(f"calculate_davsturns: pre loop {te-ti:.4}s") ; ti = te;
 
             # Loop in turn to compute the da
@@ -1767,7 +1763,7 @@ or for multiseeds:
 #                     list_seed=None
 #                 else:
 #                     list_seed=np.sort(np.unique(self.survival_data.loc[self.survival_data.nturns==at_turn,'seed']))
-                    
+
                 if self.meta.nseeds==0:
                     list_seed=[ 0 ]
                     list_data=[ data ]
@@ -1779,9 +1775,9 @@ or for multiseeds:
                     list_data=[ data.loc[data.seed==s,:] for s in list_seed ]
                     
 #                 te = time.time(); print(f"calculate_davsturns: select in loop1 {te-ti:.4}s") ; ti = te;
-                
+
 #                 self.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=False,list_seed=list_seed)
-        
+
                 # Run DA raw border detection
 #                 sys.stdout.write(f'seed {0:>3d}')
                 for ss,dd in zip(list_seed,list_data):
@@ -1791,7 +1787,7 @@ or for multiseeds:
 #                     border_min, border_max =_da_raw(dd,at_turn,seed,compute_da, ang_range)
                     list_new_da[idx], list_new_border[idx] =_da_raw(dd,at_turn,ss,compute_da, ang_range)
 #                     te = time.time(); print(f"calculate_davsturns: da_raw in loop2 {te-ti:.4}s") ; ti = te;
-            
+
 #                     self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
 #                     te = time.time(); print(f"calculate_davsturns: set_da in loop2 {te-ti:.4}s") ; ti = te;
                     
@@ -1835,7 +1831,7 @@ or for multiseeds:
                 else:
                     lturns=np.array([at_turn for at_turn in lturns if any([at_turn not in t_steps[seed] for seed in range(1,self.meta.nseeds+1)]) ])
 
-                
+
                 upper_notmonotonius=False
 #                 border_min=lower_davsturns.loc[to_turn,'border'][0]
 #                 DA_lim_max=max(upper_davsturns.loc[to_turn,'border'][0]['amplitude'])
@@ -1887,8 +1883,8 @@ or for multiseeds:
 
                             # Save DA
                             self._set_da_and_border(seed,rc,border_min,border_max,ang_range)
-                            
-                            
+
+
 #                             lower_davsturns.loc[rc,'border']=[ border_min ]
 #                             lower_davsturns.loc[rc,'avg'   ]=compute_da(border_min['angle'],
 #                                                                         border_min['amplitude'],ang_range,interp)
@@ -1938,7 +1934,7 @@ or for multiseeds:
 #                                                                      ang_range,interp)
 #                     upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                     upper_davsturns.loc[at_turn,'max'   ]=DA_lim_max=max(border_max['amplitude'])
-                    
+
                 if upper_notmonotonius:
                     print("#TODO: Rework the monoticity routine")
                     #TODO: Rework the monoticity routine
@@ -1949,17 +1945,17 @@ or for multiseeds:
 #                         at_turn=lturns[idx]
 #                         DA_lim_max=prev_DA_lim_max
 #                         raw_DA_lim_max=upper_davsturns.loc[at_turn,'max']
-                        
+
 #                         if raw_DA_lim_max>DA_lim_max:
 #                             raw_DA_lim_min=lower_davsturns.loc[at_turn,'min']
 #                             raw_border_min=lower_davsturns.loc[at_turn,'border'][0]
 #                             raw_border_max=upper_davsturns.loc[at_turn,'border'][0]
-                            
+
 #                             # Remove border particles higher than the upper limit
 #                             raw_border_max=raw_border_max.loc[raw_border_max['amplitude']<=DA_lim_max]
 #                             fit_max=fit_DA(raw_border_max['angle'], raw_border_max['amplitude'], ang_range)
 #                             raw_border_min=raw_border_min.loc[raw_border_min['amplitude']<=fit_max(raw_border_min['angle'])]
-                            
+
 #                             # Add new surviving particles to lower da border and smooth da borders
 #                             DA_lim_min=min(raw_border_min['amplitude'])
 #                             new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,
@@ -1969,7 +1965,7 @@ or for multiseeds:
 
 #                             # Save DA
 #                             self._set_da_and_border(seed,at_turn,new_border_min,new_border_max,ang_range)
-                            
+
 #                             lower_davsturns.loc[at_turn,'border']=[ new_border_min ]
 #                             lower_davsturns.loc[at_turn,'avg'   ]=compute_da(new_border_min['angle'],
 #                                                                              new_border_min['amplitude'],ang_range,interp)
@@ -1982,10 +1978,10 @@ or for multiseeds:
 #                                                                              new_border_max['amplitude'],ang_range,interp)
 #                             upper_davsturns.loc[at_turn,'min'   ]=min(new_border_max['amplitude'])
 #                             upper_davsturns.loc[at_turn,'max'   ]=max(new_border_max['amplitude'])
-                            
+
 #                             prev_DA_lim_min=min(new_border_min['amplitude'])
 #                             prev_DA_lim_max=max(new_border_max['amplitude'])
-                            
+
 #                             # Recheck previous turns for non-monoticity of the lower DA estimation
 #                             DA_lim_min=prev_DA_lim_min
 #                             border_min=new_border_min
@@ -1995,8 +1991,8 @@ or for multiseeds:
 #                                         raw_border_min=border_min #lower_davsturns.loc[rc,'border'][0]
 #                                         raw_border_max=upper_davsturns.loc[rc,'border'][0]
 #                                         DA_lim_max=upper_davsturns.loc[rc,'max']
-                                    
-                                        
+
+
 #                                         new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,
 #                                                                                     at_turn=rc,removed=removed,
 #                                                                                     DA_lim_min=DA_lim_min,DA_lim_max=DA_lim_max,
@@ -2013,7 +2009,7 @@ or for multiseeds:
 
 #                                         # Save DA
 #                                         self._set_da_and_border(seed,rc,new_border_min,new_border_max,ang_range)
-                            
+
 #                                         lower_davsturns.loc[rc,'border']=[ new_border_min ]
 #                                         lower_davsturns.loc[rc,'avg'   ]=compute_da(new_border_min['angle'],
 #                                                                                     new_border_min['amplitude'],
@@ -2027,22 +2023,22 @@ or for multiseeds:
 #                                                                                     ang_range,interp)
 #                                         upper_davsturns.loc[rc,'min'   ]=min(new_border_max['amplitude'])
 #                                         upper_davsturns.loc[rc,'max'   ]=max(new_border_max['amplitude'])
-                                    
+
 #                                         border_min=new_border_min
 #                                         DA_lim_min=lower_davsturns.loc[rc,'min']
-                                
+
 
 #                         else:
 #                             prev_DA_lim_max=raw_DA_lim_max
-                        
-                    
+
+
 #                 if self.meta.nseeds==0:
 #                     self._lower_davsturns=lower_davsturns
 #                     self._upper_davsturns=upper_davsturns
 #                 else:
 #                     self._lower_davsturns[seed]=lower_davsturns
 #                     self._upper_davsturns[seed]=upper_davsturns
-                    
+
         # For the multiseeds case, generate the summary as 'stat' over all the seeds
         if self.meta.nseeds!=0:
             print("#TODO: Rework stat routine")
@@ -2230,11 +2226,6 @@ or for multiseeds:
             res.index=row
             res[f'seed']= seed
             res[f'fit']= dtemp+' '+data_type[0]
-# <<<<<<<<<<<<<<<<<<< debug
-#         print('res=')
-#         print(res)
-#         print()
-# <<<<<<<<<<<<<<<<<<< debug
 
         # Save results
         self._da_model=concat(self._da_model,res.loc[row,:],seed=seed,fit=dtemp+' '+data_type[0])
@@ -2649,7 +2640,7 @@ or for multiseeds:
             
     
     # =================================================================
- 
+
     def convert_to_radial(self):
         # impossible; only to add dimensions or something like that
         raise NotImplementedError
