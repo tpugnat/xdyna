@@ -3,19 +3,23 @@ import matplotlib.pyplot as plt
 from .postprocess_tools import fit_DA
 
 
-def plot_particles(DA, ax=None, at_turn=None, type_plot="polar", seed=None,
-                   closses="red", csurviving="blue", size_scaling="log", **kwargs):
+def plot_particles(DA, ax=None, at_turn=None, seed=None, status="All", type_plot="polar",
+                   #closses="red", csurviving="blue", 
+                   size_scaling="log", **kwargs):
     """Scatter plot of the lost and surviving particles.
 
 Parameters
 ----------
 ax:           Plot axis.
-at_turn:      All particles surviving at least this number of turns are considered as surviving.
-seed:         In case of multiseed simulation, the seed number must be specified (Default=None).
-type_plot:    x-y for cartesian, ang-amp for polar (Default="polar").
-csurviving:   Color of surviving dots (Default="blue"). Use "" to disable.
-closses:      Color of losses dots (Default="red"). Use "" to disable.
-size_scaling: Type of losses dot scaling (Default="log"). There are 3 options: "linear", "log", None.
+at_turn:      All particles surviving at least this number of turns are considered as surviving. (Default=max_turns)
+seed:         In case of multiseed simulation, the seed number must be specified. (Default=None)
+status:       Status of the particles at this turn: "All", "Surv", "Loss". (Default="All")
+type_plot:    x-y for cartesian, ang-amp for polar. (Default="polar")
+size_scaling: Type of losses dot scaling: "linear", "log", None. (Default="log")
+
+Return
+----------
+ax
 """
 
     if ax is None:
@@ -26,19 +30,8 @@ size_scaling: Type of losses dot scaling (Default="log"). There are 3 options: "
     if DA.meta.nseeds>0 and (seed==None or seed=='stat'):
         raise ValueError('For multiseed simulation, please specify a seed number.')
 
-    # Clean kwargs and initiallize parameters
-    if 'c' in kwargs:
-        kwargs.pop('c')
-        print("Warning: ignoring parameter 'c'. Use 'closses' and 'csurviving' instead.")
-    if 'color' in kwargs:
-        kwargs.pop('color')
-        print("Warning: ignoring parameter 'color'. Use 'closses' and 'csurviving' instead.")
-    if 'label' in kwargs:
-        print("Warning: ignoring parameter 'label'.")
-        kwargs.pop('label')
-
     if at_turn is None:
-        at_turn=DA.max_turns
+        at_turn = DA.max_turns
     if at_turn > DA.max_turns:
         raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
     if DA.meta.nseeds==0:
@@ -46,64 +39,103 @@ size_scaling: Type of losses dot scaling (Default="log"). There are 3 options: "
     else:
         data = DA.survival_data[DA.survival_data.seed==seed].copy()
 
+    if status=="Surv":
+        data = data.loc[data.nturns>=at_turn,:]
+    elif status=="Loss":
+        data = data.loc[data.nturns<at_turn,:]
+
     if type_plot=="polar":
         if "angle" not in data.columns or "amplitude" not in data.columns:
-            data['angle']    = np.arctan2(data['y'],data['x'])*180/np.pi
-            data['amplitude']= np.sqrt(data['x']**2+data['y']**2)
-
-        if csurviving is not None and csurviving!='':
-            surv=data.loc[data['nturns']>=at_turn,:]
-            ax.scatter(surv['angle'], surv['amplitude'], color=csurviving, \
-                       label="Surv.", **kwargs)
-
-        if closses is not None and closses!='':
-            loss=data.loc[data['nturns']<at_turn,:]
-            if size_scaling in ["linear","log"]:
-                if size_scaling=="linear":
-                    size=(loss['nturns'].to_numpy()/at_turn) * plt.rcParams['lines.markersize']
-                elif size_scaling=="log":
-                    loss=loss.loc[loss['nturns']>0,:]
-                    size=(np.log10(loss['nturns'].to_numpy())/np.log10(at_turn)) *\
-                            plt.rcParams['lines.markersize']
-                ax.scatter(loss['angle'], loss['amplitude'], size**2, color=closses, \
-                           label="Loss.", **kwargs)
-            else:
-                ax.scatter(loss['angle'], loss['amplitude'], color=closses, \
-                           label="Loss.", **kwargs)
-            ax.set_xlabel(r'Angle [$^{\circ}$]')
-            ax.set_ylabel(r'Amplitude [$\sigma$]')
-
+            data['angle']     = np.arctan2(data['y'],data['x'])*180/np.pi
+            data['amplitude'] = np.sqrt(data['x']**2+data['y']**2)
+        x = data.angle
+        y = data.amplitude
+        ax.set_xlabel(r'Angle [$^{\circ}$]')
+        ax.set_ylabel(r'Amplitude [$\sigma$]')
     elif type_plot=="cartesian":
         if "x" not in data.columns or "y" not in data.columns:
-            data['x']= data['amplitude']*np.cos(data['angle']*np.pi/180)
-            data['y']= data['amplitude']*np.sin(data['angle']*np.pi/180)
-
-        if csurviving is not None and csurviving!='':
-            surv=data.loc[data['nturns']>=at_turn,:]
-            ax.scatter(surv['x'], surv['y'], color=csurviving, label="Surv.", \
-                       **kwargs)
-
-        if closses is not None and closses!='':
-            loss=data.loc[data['nturns']<at_turn,:]
-            if size_scaling in ["linear","log"]:
-                if size_scaling=="linear":
-                    size=(loss['nturns'].to_numpy()/at_turn) * plt.rcParams['lines.markersize']
-                elif size_scaling=="log":
-                    loss=loss.loc[loss['nturns']>0,:]
-                    size=(np.log10(loss['nturns'].to_numpy())/np.log10(at_turn)) *\
-                            plt.rcParams['lines.markersize']
-                ax.scatter(loss['x'], loss['y'], size**2, color=closses, label="Loss.", **kwargs)
-            else:
-                ax.scatter(loss['x'], loss['y'], color=closses, label="Loss.", **kwargs)
-            ax.set_xlabel(r'x [$\sigma$]')
-            ax.set_ylabel(r'y [$\sigma$]')
-
+            data['x'] = data['amplitude']*np.cos(data['angle']*np.pi/180)
+            data['y'] = data['amplitude']*np.sin(data['angle']*np.pi/180)
+        x = data.x
+        y = data.y
+        ax.set_xlabel(r'x [$\sigma$]')
+        ax.set_ylabel(r'y [$\sigma$]')
     else:
         raise ValueError('type_plot can only be either "polar" or "cartesian".')
 
+    if status=="Loss" and size_scaling in ["linear","log"]:
+        if size_scaling=="linear":
+            size = (data['nturns'].to_numpy() / at_turn) * plt.rcParams['lines.markersize']
+        elif size_scaling=="log":
+            mask = (data['nturns']>0)
+            x = x[mask]
+            y = y[mask]
+            size = (np.log10(data.nturns[mask].to_numpy()) / np.log10(at_turn)) * plt.rcParams['lines.markersize']
+        ax.scatter(x, y, size**2, **kwargs)
+    else:
+        ax.scatter(x, y, **kwargs)
+    return ax
 
-def plot_da_border(DA, ax=None, at_turn=None, seed=None, type_plot="polar", clower="blue", cupper="red", **kwargs):
-    """Plot the . border.
+
+#     if type_plot=="polar":
+#         if "angle" not in data.columns or "amplitude" not in data.columns:
+#             data['angle']    = np.arctan2(data['y'],data['x'])*180/np.pi
+#             data['amplitude']= np.sqrt(data['x']**2+data['y']**2)
+
+#         if csurviving is not None and csurviving!='':
+#             surv=data.loc[data['nturns']>=at_turn,:]
+#             ax.scatter(surv['angle'], surv['amplitude'], color=csurviving, \
+#                        label="Surv.", **kwargs)
+
+#         if closses is not None and closses!='':
+#             loss=data.loc[data['nturns']<at_turn,:]
+#             if size_scaling in ["linear","log"]:
+#                 if size_scaling=="linear":
+#                     size=(loss['nturns'].to_numpy()/at_turn) * plt.rcParams['lines.markersize']
+#                 elif size_scaling=="log":
+#                     loss=loss.loc[loss['nturns']>0,:]
+#                     size=(np.log10(loss['nturns'].to_numpy())/np.log10(at_turn)) *\
+#                             plt.rcParams['lines.markersize']
+#                 ax.scatter(loss['angle'], loss['amplitude'], size**2, color=closses, \
+#                            label="Loss.", **kwargs)
+#             else:
+#                 ax.scatter(loss['angle'], loss['amplitude'], color=closses, \
+#                            label="Loss.", **kwargs)
+#             ax.set_xlabel(r'Angle [$^{\circ}$]')
+#             ax.set_ylabel(r'Amplitude [$\sigma$]')
+
+#     elif type_plot=="cartesian":
+#         if "x" not in data.columns or "y" not in data.columns:
+#             data['x']= data['amplitude']*np.cos(data['angle']*np.pi/180)
+#             data['y']= data['amplitude']*np.sin(data['angle']*np.pi/180)
+
+#         if csurviving is not None and csurviving!='':
+#             surv=data.loc[data['nturns']>=at_turn,:]
+#             ax.scatter(surv['x'], surv['y'], color=csurviving, label="Surv.", \
+#                        **kwargs)
+
+#         if closses is not None and closses!='':
+#             loss=data.loc[data['nturns']<at_turn,:]
+#             if size_scaling in ["linear","log"]:
+#                 if size_scaling=="linear":
+#                     size=(loss['nturns'].to_numpy()/at_turn) * plt.rcParams['lines.markersize']
+#                 elif size_scaling=="log":
+#                     loss=loss.loc[loss['nturns']>0,:]
+#                     size=(np.log10(loss['nturns'].to_numpy())/np.log10(at_turn)) *\
+#                             plt.rcParams['lines.markersize']
+#                 ax.scatter(loss['x'], loss['y'], size**2, color=closses, label="Loss.", **kwargs)
+#             else:
+#                 ax.scatter(loss['x'], loss['y'], color=closses, label="Loss.", **kwargs)
+#             ax.set_xlabel(r'x [$\sigma$]')
+#             ax.set_ylabel(r'y [$\sigma$]')
+
+#     else:
+#         raise ValueError('type_plot can only be either "polar" or "cartesian".')
+#     return ax
+
+
+def plot_da_border(DA, ax=None, at_turn=None, seed=None, type_plot="polar", type_data="lower", **kwargs):
+    """Plot the border.
 
 Parameters
 ----------
@@ -111,12 +143,12 @@ ax:        Plot axis.
 at_turn:   All particles surviving at least this number of turns are considered as surviving.
 seed:      In case of multiseed simulation, the seed number must be specified (Default=None).
 type_plot: x-y for cartesian, ang-amp for polar (Default="polar").
-clower:    Color of the lower DA estimation (Default="blue"). Use "" to disable.
-cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
-"""
+type_data: "lower", "upper" (Default="lower").
 
-#         if DA.meta.pairs_shift != 0:
-#             raise NotImplementedError("The DA computing methods have not been implemented for pairs yet!")
+Return
+----------
+ax
+"""
 
     if ax is None:
         ax = plt.subplots(1,1,figsize=(10,10))[1]
@@ -126,73 +158,90 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
     if seed=='stat':
         raise ValueError('"stat" border is not computed yet.')
 
-    # Clean kwargs and initiallize parameters
-    if 'c' in kwargs:
-        kwargs.pop('c')
-        print("Warning: ignoring parameter 'c'. Use 'closses' and 'csurviving' instead.")
-    if 'color' in kwargs:
-        kwargs.pop('color')
-        print("Warning: ignoring parameter 'color'. Use 'closses' and 'csurviving' instead.")
-    label = kwargs.pop('label', '')
-
     if at_turn is None:
-        at_turn=DA.max_turns
+        at_turn = DA.max_turns
     if at_turn > DA.max_turns:
         raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
+    
     if DA._border is None:
-        DA.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=True)
+        DA.calculate_da(at_turn=at_turn, angular_precision=1, smoothing=True)
 
     data = DA.survival_data.copy()
     if "angle" not in data.columns:
         data['angle'] = np.arctan2(data['y'],data['x'])*180/np.pi
     else:
         data['angle'] = np.array(data.angle)
-    angle=np.unique(data.angle)
-    ang_range=(min(angle),max(angle))
+    angle     = np.unique(data.angle)
+    ang_range = (min(angle),max(angle))
 
     if DA.meta.nseeds==0:
-        border=DA._border
+        border = DA._border
     else:
-        border=DA._border[DA._border.seed==seed]
+        border = DA._border[DA._border.seed==seed]
 
-    at_turn=max(border.t[border.t<=at_turn])
-
-    mask_lower=(border.t==at_turn) & (~border['id lower'].isna())
-    mask_upper=(border.t==at_turn) & (~border['id upper'].isna())
-    fit_min=fit_DA(data.angle[border.loc[mask_lower,'id lower']],
-                   data.amplitude[border.loc[mask_lower,'id lower']], ang_range)
-    fit_max=fit_DA(data.angle[border.loc[mask_upper,'id upper']],
-                   data.amplitude[border.loc[mask_upper,'id upper']], ang_range)
-
-    angle  = np.sort(angle)
-    amplitude_min=fit_min(angle)
-    amplitude_max=fit_max(angle)
+    at_turn = max(border.t[border.t<=at_turn])
+    
+    mask     = (border.t==at_turn) & (~border['id '+type_data].isna())
+    fit_data = fit_DA(data.angle[border.loc[mask,'id '+type_data]],
+                      data.amplitude[border.loc[mask,'id '+type_data]], ang_range)
+    
+    angle     = np.sort(angle)
+    amplitude = fit_data(angle)
     if type_plot=="polar":
-        if clower is not None and clower!='':
-            ax.plot(angle,amplitude_min,color=clower,label=label+' (min)',**kwargs)
-
-        if cupper is not None and cupper!='':
-            ax.plot(angle,amplitude_max,color=cupper,label=label+' (max)',**kwargs)
+        ax.plot(angle, amplitude, **kwargs)
 
         ax.set_xlabel(r'Angle [$^{\circ}$]')
         ax.set_ylabel(r'Amplitude [$\sigma$]')
 
     elif type_plot=="cartesian":
-        if clower is not None and clower!='':
-            x= amplitude_min*np.cos(angle*np.pi/180)
-            y= amplitude_min*np.sin(angle*np.pi/180)
-            ax.plot(x,y,color=clower,label=label+' (min)',**kwargs)
-
-        if cupper is not None and cupper!='':
-            x= amplitude_max*np.cos(angle*np.pi/180)
-            y= amplitude_max*np.sin(angle*np.pi/180)
-            ax.plot(x,y,color=cupper,label=label+' (max)',**kwargs)
+        x = amplitude*np.cos(angle*np.pi/180)
+        y = amplitude*np.sin(angle*np.pi/180)
+        ax.plot(x, y, **kwargs)
 
         ax.set_xlabel(r'x [$\sigma$]')
         ax.set_ylabel(r'y [$\sigma$]')
 
     else:
         raise ValueError('type_plot can only be either "polar" or "cartesian".')
+    return ax
+
+#     mask_lower=(border.t==at_turn) & (~border['id lower'].isna())
+#     mask_upper=(border.t==at_turn) & (~border['id upper'].isna())
+#     fit_min=fit_DA(data.angle[border.loc[mask_lower,'id lower']],
+#                    data.amplitude[border.loc[mask_lower,'id lower']], ang_range)
+#     fit_max=fit_DA(data.angle[border.loc[mask_upper,'id upper']],
+#                    data.amplitude[border.loc[mask_upper,'id upper']], ang_range)
+
+#     angle = np.sort(angle)
+#     amplitude_min=fit_min(angle)
+#     amplitude_max=fit_max(angle)
+#     if type_plot=="polar":
+#         if clower is not None and clower!='':
+#             ax.plot(angle,amplitude_min,color=clower,label=label+' (min)',**kwargs)
+
+#         if cupper is not None and cupper!='':
+#             ax.plot(angle,amplitude_max,color=cupper,label=label+' (max)',**kwargs)
+
+#         ax.set_xlabel(r'Angle [$^{\circ}$]')
+#         ax.set_ylabel(r'Amplitude [$\sigma$]')
+
+#     elif type_plot=="cartesian":
+#         if clower is not None and clower!='':
+#             x= amplitude_min*np.cos(angle*np.pi/180)
+#             y= amplitude_min*np.sin(angle*np.pi/180)
+#             ax.plot(x,y,color=clower,label=label+' (min)',**kwargs)
+
+#         if cupper is not None and cupper!='':
+#             x= amplitude_max*np.cos(angle*np.pi/180)
+#             y= amplitude_max*np.sin(angle*np.pi/180)
+#             ax.plot(x,y,color=cupper,label=label+' (max)',**kwargs)
+
+#         ax.set_xlabel(r'x [$\sigma$]')
+#         ax.set_ylabel(r'y [$\sigma$]')
+
+#     else:
+#         raise ValueError('type_plot can only be either "polar" or "cartesian".')
+#     return ax
 
 
 def plot_davsturns_border(DA, ax=None, from_turn=1e3, to_turn=None, y="DA", seed=None, clower="blue", cupper="red", 
@@ -209,6 +258,10 @@ clower:    Color of the lower da vs turns stat. Set to '' will not show the plot
 cupper:    Color of the upper da vs turns stat. Set to '' will not show the plot (Default: "red").
 show_seed: Plot seeds (Default: True).
 show_Nm1:  Plot davsturns as a stepwise function (Default: True).
+
+Return
+----------
+ax
 """
 
     if ax is None:
@@ -259,7 +312,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
 
     if cupper is not None and cupper!='' and (show_estimate=="both" or show_estimate=="upper"):
         # Load Data
-        davsturns_avg=upper_da.loc[lturns_data,ycolumn+' upper'] ;
+        davsturns_avg=upper_da.loc[lturns_data,ycolumn+' upper'];
 
         # Add step at turns-1
         if show_Nm1:
@@ -301,7 +354,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
 
     if clower is not None and clower!='' and (show_estimate=="both" or show_estimate=="lower"):
         # Load Data
-        davsturns_avg=lower_da.loc[lturns_data,ycolumn+' lower'] ;
+        davsturns_avg=lower_da.loc[lturns_data,ycolumn+' lower'];
 
         # Add step at turns-1
         if show_Nm1:
@@ -342,6 +395,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
 
     ax.set_xlabel(r'Turns')
     ax.set_ylabel(r'Amplitude [$\sigma$]')
+    return ax
     
     
 
@@ -360,6 +414,10 @@ clower:    Color of the lower da vs turns stat. Set to '' will not show the plot
 cupper:    Color of the upper da vs turns stat. Set to '' will not show the plot (Default: "red").
 show_seed: Plot seeds (Default: True).
 show_Nm1:  Plot davsturns as a stepwise function (Default: True).
+
+Return
+----------
+ax
 """
 
     if ax is None:
@@ -405,8 +463,8 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
     if cupper is not None and cupper!='':
         # Load Data
 #         davsturns_avg=upper_da.loc[lturns_data,'DA upper'] ;
-        davsturns_min=upper_da.loc[lturns_data,'DAmin upper'] ;
-        davsturns_max=upper_da.loc[lturns_data,'DAmax upper'] ;
+        davsturns_min=upper_da.loc[lturns_data,'DAmin upper'];
+        davsturns_max=upper_da.loc[lturns_data,'DAmax upper'];
 
         # Add step at turns-1
         if show_Nm1:
@@ -436,7 +494,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
                 slturns_prev=[t-1 for t in slturns_data if t>from_turn and t<=to_turn]
 
                 # Load Data
-                davsturns_avg=supper_da.loc[slturns_data,'DA upper'] ;
+                davsturns_avg=supper_da.loc[slturns_data,'DA upper'];
 
                 # Add step at turns-1
                 if show_Nm1:
@@ -454,8 +512,8 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
     if clower is not None and clower!='':
         # Load Data
 #         davsturns_avg=lower_da.loc[lturns_data,'DA lower'] ;
-        davsturns_min=lower_da.loc[lturns_data,'DAmin lower'] ;
-        davsturns_max=lower_da.loc[lturns_data,'DAmax lower'] ;
+        davsturns_min=lower_da.loc[lturns_data,'DAmin lower'];
+        davsturns_max=lower_da.loc[lturns_data,'DAmax lower'];
 
         # Add step at turns-1
         if show_Nm1:
@@ -485,7 +543,7 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
                 slturns_prev=[t-1 for t in slturns_data if t>from_turn and t<=to_turn]
 
                 # Load Data
-                davsturns_avg=slower_da.loc[slturns_data,'DA lower'] ;
+                davsturns_avg=slower_da.loc[slturns_data,'DA lower'];
 
                 # Add step at turns-1
                 if show_Nm1:
@@ -501,3 +559,4 @@ show_Nm1:  Plot davsturns as a stepwise function (Default: True).
 
     ax.set_xlabel(r'Turns')
     ax.set_ylabel(r'Amplitude [$\sigma$]')
+    return ax
