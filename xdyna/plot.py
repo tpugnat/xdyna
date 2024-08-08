@@ -134,16 +134,16 @@ ax
 #     return ax
 
 
-def plot_da_border(DA, ax=None, at_turn=None, seed=None, type_plot="polar", type_data="lower", **kwargs):
+def plot_border(DA, ax=None, at_turn=None, seed=None, type_plot="polar", type_border="lower", **kwargs):
     """Plot the border.
 
 Parameters
 ----------
-ax:        Plot axis.
-at_turn:   All particles surviving at least this number of turns are considered as surviving.
-seed:      In case of multiseed simulation, the seed number must be specified (Default=None).
-type_plot: x-y for cartesian, ang-amp for polar (Default="polar").
-type_data: "lower", "upper" (Default="lower").
+ax:          Plot axis.
+at_turn:     All particles surviving at least this number of turns are considered as surviving.
+seed:        In case of multiseed simulation, the seed number must be specified (Default=None).
+type_plot:   x-y for cartesian, ang-amp for polar (Default="polar").
+type_border: "lower", "upper" (Default="lower").
 
 Return
 ----------
@@ -181,9 +181,9 @@ ax
 
     at_turn = max(border.t[border.t<=at_turn])
     
-    mask     = (border.t==at_turn) & (~border['id '+type_data].isna())
-    fit_data = fit_DA(data.angle[border.loc[mask,'id '+type_data]],
-                      data.amplitude[border.loc[mask,'id '+type_data]], ang_range)
+    mask     = (border.t==at_turn) & (~border['id '+type_border].isna())
+    fit_data = fit_DA(data.angle[border.loc[mask,'id '+type_border]],
+                      data.amplitude[border.loc[mask,'id '+type_border]], ang_range)
     
     angle     = np.sort(angle)
     amplitude = fit_data(angle)
