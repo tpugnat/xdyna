@@ -1705,7 +1705,7 @@ or for multiseeds:
         elif interp_order=='2D':
             compute_da=compute_da_2D
         elif interp_order=='4D':
-            compute_da=compute_da_3D
+            compute_da=compute_da_4D
         else:
             raise ValueError("interp_order must be either: '1D', '2D' or '4D'!")
             
@@ -1718,7 +1718,7 @@ or for multiseeds:
         else:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
         ang_range=(self.meta.ang_min,self.meta.ang_max)
-            
+           
 #         if self._lower_davsturns is None or (self.meta.nseeds==0 and to_turn not in self._lower_davsturns)or  (self.meta.nseeds>0 and to_turn not in self._lower_davsturns[1]):
         if force:
             self._da = None
@@ -1726,8 +1726,8 @@ or for multiseeds:
         if self._da is None or to_turn not in self._da['t']:
             self.calculate_da(at_turn=to_turn, smoothing=True, 
                               interp_order=interp_order, interp_method=interp_method, force=force, save=False) 
-            
-            
+
+
         # Load particle data
         data = self.survival_data.copy()
         data['id']= data.index
@@ -2905,7 +2905,7 @@ def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add r
         
         if nemit is not None:
             warnings.warn(f"A renormalisation of emmitances is applyed ({sixdb_da.nemitt_x} -> {nemit}). This might lead to error in the analysis.")
-            self.update_emittance(nemit, update_surv=True)
+            sixdb_da.update_emittance(nemit, update_surv=True)
     
     sixdb_da.meta._store()
     return sixdb_da
