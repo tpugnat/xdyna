@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from .postprocess_tools import fit_DA
 
 
-def plot_particles(DA, ax=None, at_turn=None, seed=None, status="All", type_plot="polar",
+def plot_particles(DA, *arg, ax=None, at_turn=None, seed=None, status="All", type_plot="polar",
                    #closses="red", csurviving="blue", 
                    size_scaling="log", **kwargs):
     """Scatter plot of the lost and surviving particles.
@@ -71,9 +71,9 @@ ax
             x = x[mask]
             y = y[mask]
             size = (np.log10(data.nturns[mask].to_numpy()) / np.log10(at_turn)) * plt.rcParams['lines.markersize']
-        ax.scatter(x, y, size**2, **kwargs)
+        ax.scatter(x, y, size**2, *arg, **kwargs)
     else:
-        ax.scatter(x, y, **kwargs)
+        ax.scatter(x, y, *arg, **kwargs)
     return ax
 
 
@@ -134,7 +134,7 @@ ax
 #     return ax
 
 
-def plot_border(DA, ax=None, at_turn=None, seed=None, type_plot="polar", type_border="lower", **kwargs):
+def plot_border(DA, *arg, ax=None, at_turn=None, seed=None, type_plot="polar", type_border="lower", **kwargs):
     """Plot the border.
 
 Parameters
@@ -188,7 +188,7 @@ ax
     angle     = np.sort(angle)
     amplitude = fit_data(angle)
     if type_plot=="polar":
-        ax.plot(angle, amplitude, **kwargs)
+        ax.plot(angle, amplitude, *arg, **kwargs)
 
         ax.set_xlabel(r'Angle [$^{\circ}$]')
         ax.set_ylabel(r'Amplitude [$\sigma$]')
@@ -196,7 +196,7 @@ ax
     elif type_plot=="cartesian":
         x = amplitude*np.cos(angle*np.pi/180)
         y = amplitude*np.sin(angle*np.pi/180)
-        ax.plot(x, y, **kwargs)
+        ax.plot(x, y, *arg, **kwargs)
 
         ax.set_xlabel(r'x [$\sigma$]')
         ax.set_ylabel(r'y [$\sigma$]')
