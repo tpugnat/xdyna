@@ -167,12 +167,16 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
     angle  = np.sort(angle)
     amplitude_min=fit_min(angle)
     amplitude_max=fit_max(angle)
+    extra_lab_lower = '' ; extra_lab_upper = '' ;
+    if clower and cupper:
+        extra_lab_lower = ' (min)' ; extra_lab_upper = ' (max)' ;
+    
     if type_plot=="polar":
         if clower is not None and clower!='':
-            ax.plot(angle,amplitude_min,color=clower,label=label+' (min)',**kwargs)
+            ax.plot(angle,amplitude_min,color=clower,label=label+extra_lab_lower,**kwargs)
 
         if cupper is not None and cupper!='':
-            ax.plot(angle,amplitude_max,color=cupper,label=label+' (max)',**kwargs)
+            ax.plot(angle,amplitude_max,color=cupper,label=label+extra_lab_upper,**kwargs)
 
         ax.set_xlabel(r'Angle [$^{\circ}$]')
         ax.set_ylabel(r'Amplitude [$\sigma$]')
@@ -181,12 +185,12 @@ cupper:    Color of the upper DA estimation (Default="red"). Use "" to disable.
         if clower is not None and clower!='':
             x= amplitude_min*np.cos(angle*np.pi/180)
             y= amplitude_min*np.sin(angle*np.pi/180)
-            ax.plot(x,y,color=clower,label=label+' (min)',**kwargs)
+            ax.plot(x,y,color=clower,label=label+extra_lab_lower,**kwargs)
 
         if cupper is not None and cupper!='':
             x= amplitude_max*np.cos(angle*np.pi/180)
             y= amplitude_max*np.sin(angle*np.pi/180)
-            ax.plot(x,y,color=cupper,label=label+' (max)',**kwargs)
+            ax.plot(x,y,color=cupper,label=label+extra_lab_upper,**kwargs)
 
         ax.set_xlabel(r'x [$\sigma$]')
         ax.set_ylabel(r'y [$\sigma$]')
