@@ -1,26 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .postprocess_tools import fit_DA
+from typing import Union
 
 
-def plot_particles(DA, *arg, ax=None, at_turn=None, seed=None, status="All", type_plot="polar",
+def plot_particles(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union[int,None]=None, status: str="All", type_plot: str="polar",
                    #closses="red", csurviving="blue", 
-                   size_scaling="log", **kwargs):
+                   size_scaling: str="log", **kwargs):
     """Scatter plot of the lost and surviving particles.
 
-Parameters
-----------
-ax:           Plot axis.
-at_turn:      All particles surviving at least this number of turns are considered as surviving. (Default=max_turns)
-seed:         In case of multiseed simulation, the seed number must be specified. (Default=None)
-status:       Status of the particles at this turn: "All", "Surv", "Loss". (Default="All")
-type_plot:    x-y for cartesian, ang-amp for polar. (Default="polar")
-size_scaling: Type of losses dot scaling: "linear", "log", None. (Default="log")
+    Args:
+        DA (xdyna.DA):                              DA class object.
+        ax (matplotlib.axes.Axes | None, optional): Plot axis. Automatically generated if None. Defaults to None.
+        at_turn (int | None, optional):             All particles surviving at least this number of turns are considered as surviving. Defaults to None.
+        seed (int | None, optional):                In case of multiseed simulation, the seed number must be specified. Defaults to None.
+        status (str, optional):                     Status of the particles at this turn: "All", "Surv", "Loss". Defaults to "All".
+        type_plot (str, optional):                  x-y for cartesian, ang-amp for polar. Defaults to "polar".
+        size_scaling (str, optional):               Type of losses dot scaling: "linear", "log", None. Defaults to "log".
+        **kwargs:                                   Additional keyword arguments for the plot.
 
-Return
-----------
-ax
-"""
+    Returns:
+        matplotlib.axes.Axes: Plot axis.
+    """
 
     if ax is None:
         ax = plt.subplots(1,1,figsize=(10,10))[1]
@@ -134,21 +135,21 @@ ax
 #     return ax
 
 
-def plot_border(DA, *arg, ax=None, at_turn=None, seed=None, type_plot="polar", type_border="lower", **kwargs):
+def plot_border(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union[int,None]=None, type_plot="polar", type_border="lower", **kwargs):
     """Plot the border.
 
-Parameters
-----------
-ax:          Plot axis.
-at_turn:     All particles surviving at least this number of turns are considered as surviving.
-seed:        In case of multiseed simulation, the seed number must be specified (Default=None).
-type_plot:   x-y for cartesian, ang-amp for polar (Default="polar").
-type_border: "lower", "upper" (Default="lower").
+    Args:
+        DA (xdyna.DA):                              DA class object.
+        ax (matplotlib.axes.Axes | None, optional): Plot axis. Automatically generated if None. Defaults to None.
+        at_turn (int | None, optional):             All particles surviving at least this number of turns are considered as surviving. Defaults to None.
+        seed (int | None, optional):                In case of multiseed simulation, the seed number must be specified. Defaults to None.
+        type_plot (str, optional):                  x-y for cartesian, ang-amp for polar. Defaults to "polar".
+        type_border (str, optional):                "lower", "upper". Defaults to "lower".
+        **kwargs:                                   Additional keyword arguments for the plot.
 
-Return
-----------
-ax
-"""
+    Returns:
+        matplotlib.axes.Axes: Plot axis.
+    """
 
     if ax is None:
         ax = plt.subplots(1,1,figsize=(10,10))[1]
@@ -244,25 +245,25 @@ ax
 #     return ax
 
 
-def plot_davsturns_border(DA, ax=None, from_turn=1e3, to_turn=None, y="DA", seed=None, clower="blue", cupper="red", 
-                          show_Nm1=True, **kwargs): #show_seed=True, 
+def plot_davsturns_border(DA, ax=None, from_turn: int=int(1e3), to_turn: Union[int,None]=None, y: str="DA", seed: Union[int,None]=None, 
+                          clower: str="blue", cupper: str="red", show_Nm1: bool=True, **kwargs): #show_seed=True, 
     """Plot the DA as a function of turns.
 
-Parameters
-----------
-ax:        Plot axis.
-from_turn: Lower turn range (Default: from_turn=1e3).
-at_turn:   Upper turn range (Default: at_turn=max_turns).
-seed:      In case of multiseed simulation, the seed number must be specified (Default=None).
-clower:    Color of the lower da vs turns stat. Set to '' will not show the plot (Default: "blue").
-cupper:    Color of the upper da vs turns stat. Set to '' will not show the plot (Default: "red").
-show_seed: Plot seeds (Default: True).
-show_Nm1:  Plot davsturns as a stepwise function (Default: True).
+    Args:
+        DA (xdyna.DA):                              DA class object.
+        ax (matplotlib.axes.Axes | None, optional): Plot axis. Automatically generated if None. Defaults to None.
+        from_turn (int, optional):                  Lower turn range. Defaults to 1000.
+        to_turn (int, optional):                    Upper turn range. Defaults to None.
+        y (str):                                    Data column to plot. Defaults to "DA".
+        seed (int, optional):                       In case of multiseed simulation, the seed number must be specified. Defaults to None.
+        clower (str, optional):                     Color of the lower da vs turns plot. Set to '' will not show the plot. Defaults to "blue".
+        cupper (str, optional):                     Color of the upper da vs turns plot. Set to '' will not show the plot. Defaults to "red".
+        show_Nm1 (bool, optional):                  Plot davsturns as a stepwise function. Defaults to True.
+        **kwargs:                                   Additional keyword arguments for the plot.
 
-Return
-----------
-ax
-"""
+    Returns:
+        matplotlib.axes.Axes: The plot axis.
+    """
 
     if ax is None:
         ax = plt.subplots(1,1,figsize=(10,10))[1]
@@ -400,25 +401,25 @@ ax
     
 
 
-def plot_davsturns_extremum(DA, ax=None, from_turn=1e3, to_turn=None, seed=None, clower="blue", cupper="red", 
-                          show_seed=True, show_Nm1=True, **kwargs):
+def plot_davsturns_extremum(DA, ax=None, from_turn: int=1000, to_turn: Union[int,None]=None, seed: Union[int,None]=None, 
+                            clower: str="blue", cupper: str="red", show_seed: bool=True, show_Nm1: bool=True, **kwargs):
     """Plot the DA as a function of turns.
 
-Parameters
-----------
-ax:        Plot axis.
-from_turn: Lower turn range (Default: from_turn=1e3).
-at_turn:   Upper turn range (Default: at_turn=max_turns).
-seed:      In case of multiseed simulation, the seed number must be specified (Default=None).
-clower:    Color of the lower da vs turns stat. Set to '' will not show the plot (Default: "blue").
-cupper:    Color of the upper da vs turns stat. Set to '' will not show the plot (Default: "red").
-show_seed: Plot seeds (Default: True).
-show_Nm1:  Plot davsturns as a stepwise function (Default: True).
+    Args:
+        DA (xdyna.DA):                              DA class object.
+        ax (matplotlib.axes.Axes | None, optional): Plot axis. Automatically generated if None. Defaults to None.
+        from_turn (int, optional):                  Lower turn range. Defaults to 1000.
+        to_turn (int | None, optional):             Upper turn range. Defaults to None.
+        seed (int | None, optional):                In case of multiseed simulation, the seed number must be specified. Defaults to None.
+        clower (str, optional):                     Color of the lower da vs turns stat. Set to '' will not show the plot. Defaults to "blue".
+        cupper (str, optional):                     Color of the upper da vs turns stat. Set to '' will not show the plot. Defaults to "red".
+        show_seed (bool, optional):                 Plot seeds. Defaults to True.
+        show_Nm1 (bool, optional):                  Plot davsturns as a stepwise function. Defaults to True.
+        **kwargs:                                   Additional keyword arguments for plotting.
 
-Return
-----------
-ax
-"""
+    Returns:
+        matplotlib.axes.Axes: The plot axis.
+    """
 
     if ax is None:
         ax = plt.subplots(1,1,figsize=(10,10))[1]
