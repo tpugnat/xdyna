@@ -972,7 +972,7 @@ class DA:
                         data = fin.read()
                         data = data.replace('%SEEDRAN', str(seed))
                         for kk,vv in other_madx_flag.items():
-                            data = data.replace(kk, vv)
+                            data = data.replace(kk, str(vv))
                         with ProtectFile(madin, 'w') as fout:
                             fout.write(data)
                 with ProtectFile(madout, 'w') as pf:
