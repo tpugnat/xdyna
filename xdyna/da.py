@@ -2904,7 +2904,7 @@ def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add r
         sixdb_da.meta.npart = len(sixdb_da._surv.index)
         
         if nemit is not None:
-            warnings.warn(f"A renormalisation of emmitances is applyed ({sixdb_da.nemitt_x} -> {nemit}). This might lead to error in the analysis.")
+            warnings.warn(f"A renormalisation of emittances is applyed ({sixdb_da.nemitt_x} -> {nemit}). This might lead to error in the analysis.")
             self.update_emittance(nemit, update_surv=True)
     
     sixdb_da.meta._store()
