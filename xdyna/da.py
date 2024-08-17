@@ -25,6 +25,7 @@ from .postprocess_tools import _da_raw, _da_smoothing, select_model
 from xaux import ProtectFile
 from .da_meta import _DAMetaData
 from .geometry import _bleed, distance_to_polygon_2D
+from typing import Union
 
 
 _db_access_wait_time = 0.02
@@ -50,7 +51,7 @@ class DA:
 #                 'nturns', 'paired_to', 'submitted'
 #              ]
 
-    def __init__(self, name, *, path=Path.cwd(), use_files=False, read_only=False, **kwargs):
+    def __init__(self, name, *, path=Path.cwd(), use_files: bool=False, read_only: bool=False, **kwargs):
         # Initialise metadata
         self._meta = _DAMetaData(name=name, path=path, use_files=use_files, read_only=read_only)
         if self.meta._new and not read_only:
@@ -79,12 +80,8 @@ class DA:
         # Initialise DA data
         self.memory_threshold = kwargs.pop('memory_threshold', 1e9)
         self._surv = None
-#         self._t_steps = None
         self._da = None
         self._border = None
-#         self._border_id = None
-#         self._lower_davsturns = None
-#         self._upper_davsturns = None
         self._da_evol = None
         self._da_model = None
         self._active_job = -1
@@ -110,7 +107,7 @@ class DA:
             self.read_surv()
         if self._surv is None:  # also nothing on file
             return None
-        
+
         if self.da_type == 'radial':
             if self.da_dimension == 2:
                 view_cols = ['ang_xy', 'r_xy']
@@ -135,10 +132,10 @@ class DA:
                 view_cols = ['x_norm_in', 'px_norm_in', 'y_norm_in', 'py_norm_in', 'zeta_in', 'delta_in']
         else:
             view_cols = ['x_norm_in', 'px_norm_in', 'y_norm_in', 'py_norm_in', 'zeta_in', 'delta_in']
-        
+
         if self.meta.nseeds > 0:
             view_cols += ['seed']
-        
+
         if self.meta.pairs_shift == 0:
             view_cols += ['nturns', 'state']
             df = self._surv[view_cols]
@@ -152,7 +149,7 @@ class DA:
             df['state2'] = np.array(self._surv.loc[~orig,'state'])
             df['nturns'] = df.loc[:,['nturns1','nturns2']].min(axis=1)
             df['state']  = df.loc[:,['state1','state2']].min(axis=1)
-        
+
         return df.rename(columns = {
                     'x_norm_in':'x', 'px_norm_in':'px', 'y_norm_in':'y', 'py_norm_in':'py', 'delta_in':'delta', \
                     'ang_xy':'angle', 'ang_xpx':'angle_x', 'ang_ypy':'angle_y', 'r_xy':'amplitude', 'r_xpxypy': 'amplitude' \
@@ -185,7 +182,7 @@ class DA:
         return self.meta.max_turns
 
     @max_turns.setter
-    def max_turns(self, max_turns):
+    def max_turns(self, max_turns: int):
         if max_turns <= self.meta.max_turns:
             print("Warning: new value for max_turns smaller than or equal to existing max_turns! Nothing done.")
             return
@@ -209,7 +206,7 @@ class DA:
             return [self.nemitt_x, self.nemitt_y]
 
     # Not allowed on parallel process
-    def update_emittance(self, emit, update_surv=True):
+    def update_emittance(self, emit, update_surv: bool=True):
         oldemittance = self.normalised_emittance
         if hasattr(emit, '__iter__'):
             if isinstance(emit, str):
@@ -253,7 +250,7 @@ class DA:
     @property
     def line(self):
         return self._line
-            
+
     @line.setter
     def line(self, line):
         if line is None:
@@ -336,7 +333,7 @@ class DA:
     # ================ Generation of intial conditions ================
     # =================================================================
 
-    def _prepare_generation(self, normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
+    def _prepare_generation(self, normalised_emittance=None, nseeds=None, pairs_shift: float=0, pairs_shift_var=None):
         # Does survival already exist?
         if self.survival_data is not None:
             print("Warning: Initial conditions already exist! No generation done.")
@@ -394,21 +391,25 @@ class DA:
 
 
     def set_coordinates(self, *,
-                        x=None, px=None, y=None, py=None, zeta=None, delta=None,
-                        normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
-        """Let user provide initial coordinates for each plane.
-    
-    Parameters
-    ----------
-    x:               Horizontal normalised position in [sigma]. 
-    px:              Horizontal normalised momentum. 
-    y:               Vertical normalised position in [sigma]. 
-    py:              Vertical normalised momentum. 
-    zeta:            Longitudinal phase. 
-    delta:           Longitudinal momentum. 
-    pairs_shift:     Activate pair simulation (Default=0). 
-    pairs_shift_var: Direction in which pair particles are shifted (Default=None).
-"""
+                        x: Union[float,list,None]=None, px: Union[float,list,None]=None, 
+                        y: Union[float,list,None]=None, py: Union[float,list,None]=None, 
+                        zeta: Union[float,list,None]=None, delta: Union[float,list,None]=None,
+                        normalised_emittance: Union[float,list,None]=None, nseeds: Union[int,None]=None, 
+                        pairs_shift: float=0, pairs_shift_var: Union[str,None]=None):
+        """Let user provide initial coordinates for each plane. Those data are saved in _surv.
+
+        Args:
+            x (float | list | None, optional):                    Horizontal normalised position in [sigma]. Defaults to None.
+            px (float | list | None, optional):                   Horizontal normalised momentum. Defaults to None.
+            y (float | list | None, optional):                    Vertical normalised position in [sigma]. Defaults to None.
+            py (float | list | None, optional):                   Vertical normalised momentum. Defaults to None.
+            zeta (float | list | None, optional):                 Longitudinal phase. Defaults to None.
+            delta (float | list | None, optional):                Longitudinal dispersion in energy. Defaults to None.
+            normalised_emittance (float | list | None, optional): Normalised emittances. Defaults to None.
+            nseeds (int | None, optional):                        Total number of seed to simulate. Defaults to None.
+            pairs_shift (float, optional):                        Shift step length for pair particles. Ignored if equal to 0. Defaults to 0.
+            pairs_shift_var (str | None, optional):               Direction in which pair particles are shifted. Defaults to None.
+        """
 
         self._prepare_generation(normalised_emittance, nseeds, pairs_shift, pairs_shift_var)
 
@@ -457,29 +458,31 @@ class DA:
 
 
     # Not allowed on parallel process
-    def generate_initial_grid(self, *, x_min, x_max, x_step=None, x_num=None,
-                                y_min, y_max, y_step=None, y_num=None,
-                                px_norm=0, py_norm=0, zeta=0, delta=0.00027,
-                                normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
+    def generate_initial_grid(self, *, x_min: float, x_max: float, x_step: Union[float,None]=None, x_num: Union[int,None]=None,
+                                y_min: float, y_max: float, y_step: Union[float,None]=None, y_num: Union[int,None]=None,
+                                px_norm: Union[list,float]=0, py_norm: Union[list,float]=0, zeta: Union[list,float]=0, 
+                                delta: Union[list,float]=0.00027, normalised_emittance: Union[list,float,None]=None, nseeds: Union[int,None]=None, 
+                                pairs_shift: float=0, pairs_shift_var: Union[str,None]=None):
         """Generate the initial conditions in a 2D X-Y grid.
-    
-    Parameters
-    ----------
-    x_min:           Min range in the x-plan in [sigma]. 
-    x_max:           Max range in the x-plan in [sigma]. 
-    x_step:          Amplitude step size in the x-plan in [sigma] (Default=None).
-    x_num:           Number of step in the x-plan in amplitude (Default=None). 
-    y_min:           Min range in the y-plan in [sigma]. 
-    y_max:           Max range in the y-plan in [sigma]. 
-    y_step:          Amplitude step size in the y-plan in [sigma] (Default=None).
-    y_num:           Number of step in the y-plan in amplitude (Default=None). 
-    px_norm:         Horizontal normalised momentum (Default=0). 
-    py_norm:         Vertical normalised momentum (Default=0). 
-    zeta:            Longitudinal phase (Default=0). 
-    delta:           Longitudinal momentum (Default=0.00027). 
-    pairs_shift:     Activate pair simulation (Default=0). 
-    pairs_shift_var: Direction in which pair particle are shifted (Default=None).
-"""
+
+        Args:
+            x_min (float):                                        Min range in the x-plan in [sigma].
+            x_max (float):                                        Max range in the x-plan in [sigma].
+            y_min (float):                                        Min range in the y-plan in [sigma].
+            y_max (float):                                        Max range in the y-plan in [sigma].
+            x_step (float | None, optional):                      Amplitude step size in the x-plan in [sigma]. Defaults to None.
+            x_num (int | None, optional):                         Number of step in the x-plan in amplitude. Defaults to None.
+            y_step (float | None, optional):                      Amplitude step size in the y-plan in [sigma]. Defaults to None.
+            y_num (int | None, optional):                         Number of step in the y-plan in amplitude. Defaults to None.
+            px_norm (list | float, optional):                     Horizontal normalised momentum. Defaults to 0.
+            py_norm (list | float, optional):                     Vertical normalised momentum. Defaults to 0.
+            zeta (list | float, optional):                        Longitudinal phase. Defaults to 0.
+            delta (list | float, optional):                       Longitudinal momentum. Defaults to 0.00027.
+            normalised_emittance (list | float | None, optional): Normalised emittances. Defaults to None.
+            nseeds (int | None, optional):                        Total number of seed to simulate. Defaults to None.
+            pairs_shift (float,  optional):                       Shift step length for pair particles. Ignored if equal to 0. Defaults to 0.
+            pairs_shift_var (str | None, optional):               Direction in which pair particles are shifted. Defaults to None.
+        """
 
         self._prepare_generation(normalised_emittance, nseeds, pairs_shift, pairs_shift_var)
 
@@ -543,28 +546,31 @@ class DA:
 
 
     # Not allowed on parallel process
-    def generate_initial_radial(self, *, angles, r_min, r_max, r_step=None, r_num=None, ang_min=0, ang_max=90,
-                                px_norm=0, py_norm=0, zeta=0, delta=0.00027,
-                                normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None, open_border=True):
+    def generate_initial_radial(self, *, angles: int, r_min: float, r_max: float, r_step: Union[float,None]=None, r_num: Union[int,None]=None, 
+                                ang_min: float=0, ang_max: float=90, px_norm: Union[list,float]=0, py_norm: Union[list,float]=0,
+                                zeta: Union[list,float]=0, delta: Union[list,float]=0.00027, 
+                                normalised_emittance: Union[list,float,None]=None, nseeds: Union[int,None]=None, 
+                                pairs_shift: float=0, pairs_shift_var: Union[str,None]=None, open_border: bool=True):
         """Generate the initial conditions in a 2D polar grid.
-    
-    Parameters
-    ----------
-    angles:          Number of angles per seed.
-    r_min:           Min range of amplitude in [sigma]. 
-    r_max:           Max range of amplitude in [sigma]. 
-    r_step:          Amplitude step size in [sigma] (Default=None).
-    r_num:           Number of step in amplitude (Default=None). 
-    ang_min:         Lower range of the angulare distribution in [deg] (Default=0).
-    ang_max:         Upper range of the angulare distribution in [deg] (Default=90). 
-    px_norm:         Horizontal normalised momentum (Default=0). 
-    py_norm:         Vertical normalised momentum (Default=0). 
-    zeta:            Longitudinal phase (Default=0). 
-    delta:           Longitudinal momentum (Default=0.00027). 
-    pairs_shift:     Activate pair simulation (Default=0). 
-    pairs_shift_var: Direction in which pair particle are shifted (Default=None).
-    open_border:     If True, the 1st and last angles will be ang_min+ang_step and ang_max-ang_step respectively (Default=True).
-"""
+
+        Args:
+            angles (int):                                         Number of angles per seed.
+            r_min (float):                                        Min range of amplitude in [sigma].
+            r_max (float):                                        Max range of amplitude in [sigma]
+            r_step (float | None, optional):                      Amplitude step size in [sigma]. Defaults to None.
+            r_num (int | None, optional):                         Number of step in amplitude. Defaults to None.
+            ang_min (float, optional):                            Lower range of the angular distribution in [deg]. Defaults to 0.
+            ang_max (float, optional):                            Upper range of the angular distribution in [deg]. Defaults to 90.
+            px_norm (list | float, optional):                     Horizontal normalised momentum. Defaults to 0.
+            py_norm (list | float, optional):                     Vertical normalised momentum. Defaults to 0.
+            zeta (list | float, optional):                        Longitudinal phase. Defaults to 0.
+            delta (list | float, optional):                       Longitudinal momentum. Defaults to 0.00027.
+            normalised_emittance (list | float | None, optional): Normalised emittances. Defaults to None.
+            nseeds (int | None, optional):                        Total number of seed to simulate. Defaults to None.
+            pairs_shift (float,  optional):                       Shift step length for pair particles. Ignored if equal to 0. Defaults to 0.
+            pairs_shift_var (str | None, optional):               Direction in which pair particles are shifted. Defaults to None.
+            open_border (bool, optional):                         If True, the 1st and last angles will be `ang_min+ang_step` and `ang_max-ang_step` respectivel. Defaults to True.
+        """
 
         self._prepare_generation(normalised_emittance, nseeds, pairs_shift, pairs_shift_var)
 
@@ -625,23 +631,26 @@ class DA:
 
 
     # Not allowed on parallel process
-    def generate_random_initial(self, *, num_part=1000, r_max=25, px_norm=0, py_norm=0, zeta=0, delta=0.00027, ang_min=0,
-                                ang_max=90, normalised_emittance=None, nseeds=None, pairs_shift=0, pairs_shift_var=None):
+    def generate_random_initial(self, *, num_part: int=1000, r_max: float=25, px_norm: Union[list,float]=0, py_norm: Union[list,float]=0, 
+                                zeta: Union[list,float]=0, delta: Union[list,float]=0.00027, ang_min: float=0, ang_max: float=90, 
+                                normalised_emittance: Union[list,float, None]=None, nseeds: Union[int,None]=None, 
+                                pairs_shift: float=0, pairs_shift_var: Union[str,None]=None):
         """Generate the initial conditions in a 2D random grid.
-    
-    Parameters
-    ----------
-    num_part:        Number of particle per seed (Default=1000).
-    r_max:           Max range of amplitude (Default=25). 
-    ang_min:         Lower range of the angulare distribution in [deg] (Default=0).
-    ang_max:         Upper range of the angulare distribution in [deg] (Default=90). 
-    px_norm:         Horizontal normalised momentum (Default=0). 
-    py_norm:         Vertical normalised momentum (Default=0). 
-    zeta:            Longitudinal phase (Default=0). 
-    delta:           Longitudinal momentum (Default=0.00027). 
-    pairs_shift:     Activate pair simulation (Default=0). 
-    pairs_shift_var: Direction in which pair particle are shifted (Default=None).
-"""
+
+        Args:
+            num_part (int, optional):                             Number of particle per seed. Defaults to 1000.
+            r_max (float, optional):                              Max range of amplitude. Defaults to 25.
+            px_norm (list | float, optional):                     Horizontal normalised momentum. Defaults to 0.
+            py_norm (list | float, optional):                     Vertical normalised momentum. Defaults to 0.
+            zeta (list | float, optional):                        Longitudinal phase. Defaults to 0.
+            delta (list | float, optional):                       Longitudinal momentum. Defaults to 0.00027.
+            ang_min (float, optional):                            Lower range of the angular distribution in [deg]. Defaults to 0.
+            ang_max (float, optional):                            Upper range of the angular distribution in [deg]. Defaults to 90.
+            normalised_emittance (list | float | None, optional): Normalised emittances. Defaults to None.
+            nseeds (int | None, optional):                        Total number of seed to simulate. Defaults to None.
+            pairs_shift (float,  optional):                       Shift step length for pair particles. Ignored if equal to 0. Defaults to 0.
+            pairs_shift_var (str | None, optional):               Direction in which pair particles are shifted. Defaults to None.
+        """
 
         self._prepare_generation(normalised_emittance, nseeds, pairs_shift, pairs_shift_var)
 
@@ -694,7 +703,7 @@ class DA:
 
 
     # Not allowed on parallel process
-    def add_random_initial(self, *, num_part=5000, min_turns=None):
+    def add_random_initial(self, *, num_part: int=5000, min_turns=None):
         from .ml import MLBorder
 
         # TODO: make compatible with seeds and with pairs
@@ -850,8 +859,22 @@ class DA:
 
     # TODO: can we get particle mass from mask??? Particle type??
     # Allowed on parallel process
-    def build_line_from_madx(self, sequence, *, file=None, apertures=False, errors=True, \
-                             mass=xp.PROTON_MASS_EV, store_line=True, seeds=None, run_all_seeds=False):
+    def build_line_from_madx(self, sequence:str, *, file=None, apertures: bool=False, errors: bool=True, \
+                             mass: float=xp.PROTON_MASS_EV, store_line: bool=True, seeds:Union[list,None]=None, 
+                             other_madx_flag:dict={}, run_all_seeds: bool=False, raise_madx_critical_warning: bool=True):
+        """_summary_
+
+        Args:
+            sequence (str):                               Sequence to load from MAD-X.
+            file (str | Path | None, optional):           Madx mask file. Defaults to None.
+            apertures (bool, optional):                   If true, load the aperture from madx. Defaults to False.
+            errors (bool, optional):                      If true, load the magnet errors from madx. Defaults to True.
+            store_line (bool, optional):                  If true, save line in a file. Defaults to True.
+            seeds (list | None, optional):                In case of multiseed simulation, specify the seeds to runs here. Defaults to None.
+            other_madx_flag (dict, optional):             Specify flags other than `%SEEDRAN` that need to be replaced within the mask. Defaults to {}.
+            run_all_seeds (bool, optional):               In case of multiseed simulation, set to True if you want to run all seeds at once. Defaults to False.
+            raise_madx_critical_warning (bool, optional): If True, raise the critical warning from MAD-X. Defaults to True.
+        """
         # seeds=None  ->  find seed automatically (on parallel process)
         from cpymad.madx import Madx
         if file is None: 
@@ -947,14 +970,33 @@ class DA:
                     with ProtectFile(self.madx_file, 'r',
                                      max_lock_time=600) as fin:
                         data = fin.read()
+                        data = data.replace('%SEEDRAN', str(seed))
+                        for kk,vv in other_madx_flag.items():
+                            data = data.replace(kk, vv)
                         with ProtectFile(madin, 'w') as fout:
-                            fout.write(data.replace('%SEEDRAN', str(seed)))
+                            fout.write(data)
                 with ProtectFile(madout, 'w') as pf:
                     print(f"Running MAD-X in {tmpdir}")
                     mad = Madx(stdout=pf)
                     mad.chdir(tmpdir)
                     mad.call(madin.as_posix())
                     # TODO: check if MAD-X failed: if so, write 'MAD-X failed' into line_file
+                # TODO: check if madx raised a message stating a variable was not defined before being used
+                with ProtectFile(madout, 'r') as pf:
+                    lls = pf.readlines()
+                    error_madx = ''
+                    for l in lls:
+                        if "++++++ warning: illegal expression, expression NOT updated for the following :" in l:
+                            error_madx += l
+                    if error_madx != '':
+                        if raise_madx_critical_warning:
+                            raise ValueError(f"MAD-X raised the following critical warning:\n{error_madx}")
+                        else:
+                            if seed is None:
+                                print(f"MAD-X raised the following critical warning for {self.madx_file.stem}.madx.out:\n{error_madx}\n")
+                            else:
+                                print(f"MAD-X raised the following critical warning for {self.madx_file.stem}.{seed}.madx.out:\n{error_madx}\n")
+                            
             line = xt.Line.from_madx_sequence(mad.sequence[sequence], apply_madx_errors=errors, \
                                               install_apertures=apertures)
             line.particle_ref = xp.Particles(mass0=mass, gamma0=mad.sequence[sequence].beam.gamma)
@@ -993,7 +1035,15 @@ class DA:
     # =================================================================
 
     # Allowed on parallel process
-    def track_job(self, *,  npart=None, logging=True, force_single_seed_per_job=None):
+    def track_job(self, *,  npart: Union[int,None]=None, logging: bool=True, force_single_seed_per_job: Union[bool,None]=None, with_progress: bool=False):
+        """Track the particles in the lines and automatically manage the seeds.
+
+        Args:
+            npart (Union[int,None], optional):                 Max number of particle to track. Defaults to None.
+            logging (bool, optional):                          Add logging in the submission file. Defaults to True.
+            force_single_seed_per_job (bool | None, optional): If True, force to track only one seed per job. Defaults to None.
+            with_progress (bool, optional):                    Show progress while tracking. Defaults to False.
+        """
         if self.line is None:
             if self.meta.line_file is not None and self.meta.line_file != -1 and self.meta.line_file.exists():
                 self.load_line_from_file()
@@ -1008,7 +1058,7 @@ class DA:
 
         # Define tracking procedure
 #         def track_per_seed(context, tracker, x_norm, y_norm, px_norm, py_norm, zeta, delta, nemitt_x, nemitt_y, nturn):
-        def track_per_seed(context, line, x_norm, y_norm, px_norm, py_norm, zeta, delta, nemitt_x, nemitt_y, nturn):
+        def track_per_seed(context, line, x_norm, y_norm, px_norm, py_norm, zeta, delta, nemitt_x, nemitt_y, nturn, with_progress):
             
             # openmp context and radiation do not play nicely together, so temp. switch to single thread context
             if line._context.openmp_enabled:
@@ -1022,7 +1072,7 @@ class DA:
             if line._context.openmp_enabled:
                 line.build_tracker(_context=context)
 #             tracker.track(particles=part, num_turns=nturn)
-            line.track(particles=part, num_turns=nturn)
+            line.track(particles=part, num_turns=nturn, with_progress=with_progress)
             context.synchronize()
             return part
 
@@ -1031,7 +1081,7 @@ class DA:
             if self.line.tracker is None:
                 print("Building tracker.")
                 self.line.build_tracker()
-                
+
             # Select initial particles
             context = self.line.tracker._buffer.context
             x_norm  = self._surv.loc[part_ids, 'x_norm_in'].to_numpy()
@@ -1045,9 +1095,9 @@ class DA:
 #             part=track_per_seed(context,self.line.tracker,
             part=track_per_seed(context,self.line,
                                 x_norm, y_norm, px_norm, py_norm, zeta, delta, 
-                                self.nemitt_x, self.nemitt_y, self.meta.max_turns)
+                                self.nemitt_x, self.nemitt_y, self.meta.max_turns, with_progress)
             self._append_job_log('output', datetime.datetime.now().isoformat() + '  Done tracking job ' + str(job_id) + '.', logging=logging)
-                
+
             # Store results
             part_id   = context.nparray_from_context_array(part.particle_id)
             sort      = np.argsort(part_id)
@@ -1093,7 +1143,7 @@ class DA:
                 if self.line[seed].tracker is None:
                     print(f"Building tracker for seed {seed}.")
                     self.line[seed].build_tracker()
-                    
+
                 # Select initial particles
                 context = self.line[seed].tracker._buffer.context
                 part_ids_seed = part_ids[self._surv.loc[part_ids, 'seed']==seed]
@@ -1324,20 +1374,20 @@ class DA:
 #     def get_lower_da(self,at_turn=None,seed=None):
 #         '''Return the DA lower estimation at a specific turn in the form of a DataFrame with the following columns:
 #         ['turn','border','avg','min','max']
-    
+
 #     Parameters
 #     ----------
 #     at_turn: Turn at which this estimation must be computed (Default=max_turns).
 #     seed:    For multiseed simulation, the seed must be specified (Default=None).
 # '''
-          
+
 #         if at_turn is None:
 #             at_turn=self.max_turns
 #         if self._da is None:
 #             self.calculate_da(at_turn=at_turn,smoothing=True)
 #         if self.meta.nseeds!=0 and seed is None:
 #             raise ValueError('Please specify the seed number for multiseeds simulation.')
-        
+
 #         if self.meta.nseeds==0:
 #             davsturns=self._lower_davsturns
 #         else:
@@ -1349,27 +1399,27 @@ class DA:
 #     def get_upper_da(self,at_turn=None,seed=None):
 #         '''Return the DA upper estimation at a turn in the form of a DataFrame with the following columns:
 #         ['turn','border','avg','min','max']
-    
+
 #     Parameters
 #     ----------
 #     at_turn: Turn at which this estimation must be computed (Default=max_turns).
 #     seed:    For multiseed simulation, the seed must be specified (Default=None).
 # '''
-          
+
 #         if at_turn is None:
 #             at_turn=self.max_turns
 #         if self._da is None:
 #             self.calculate_da(at_turn=at_turn,smoothing=True)
 #         if self.meta.nseeds!=0 and seed is None:
 #             raise ValueError('Please specify the seed number for multiseeds simulation.')
-        
+
 #         if self.meta.nseeds==0:
 #             davsturns=self._upper_davsturns
 #         else:
 #             davsturns=self._upper_davsturns[seed]
 #         return davsturns.loc[davsturns.loc[davsturns.turn<=at_turn,'turn'].astype(float).idxmax(),:]
-    
-    
+
+
     def _set_da_and_border(self,seed,at_turn,border_min,border_max,ang_range):
         new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
                              'DAmin lower': [min(border_min['amplitude'])],
@@ -1392,28 +1442,24 @@ class DA:
 
 
     # Not allowed on parallel process
-    def calculate_da(self, at_turn=None, angular_precision=10, smoothing=True, list_seed=None,
-                     interp_order='1D', interp_method='trapz', force=False, save=True):
-        '''Compute the DA upper and lower estimation at a specific turn in the form of a pandas table:
-    ['turn','border','avg','min','max']
+    # TODO: Fix description to fit the new data format
+    def calculate_da(self, at_turn: Union[int,None]=None, angular_precision: int=10, smoothing: bool=True, list_seed: Union[list,None]=None,
+                     interp_order: str='1D', interp_method: str='trapz', force: bool=False, save: bool=True):
+        """Compute the DA upper and lower estimation at a specific turn in the form of a pandas table ['turn','border','avg','min','max'] or for multiseeds { seed:['turn','border','avg','min','max'], 'stat':['turn','avg','min','max'] }
         
-or for multiseeds:
-    { seed:['turn','border','avg','min','max'], 'stat':['turn','avg','min','max'] }
-    
-    Parameters
-    ----------
-    at_turn:           Turn at which this estimation must be computed (Default=max_turns).
-    angular_precision: Angular precision in [deg.] for the raw estimation of the borders (Default=10). It is better to use high value in order to minimise the risk of catching stability island.
-    smoothing:         True in order to smooth the borders for the random particle distribution (Default=True).
-    interp_order:      Interpolation order for the DA average: '1D', '2D', '4D' (Default='1D').
-    interp_method:     Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson' (Default='1D').
-    force:             Reset the da analysis (Default=False).
-    save:              Save da and border DataFrames in files (Default=True).
-          
-    Warning
-    ----------
-    The borders might change after using postprocess as it imposes turn-by-turn monoticity.
-'''
+        Warning:
+            The borders might change after using postprocess as it imposes turn-by-turn monoticity.
+
+        Args:
+            at_turn (int | None, optional):    Turn at which this estimation must be computed. Defaults to max_turns.
+            angular_precision (int, optional): Angular precision in [deg.] for the raw estimation of the borders.  It is better to use high value in order to minimise the risk of catching stability island. Defaults to 10.
+            smoothing (bool, optional):        True in order to smooth the borders for the random particle distribution. Defaults to True.
+            list_seed (list | None, optional): List of seeds on which the da will be estimated. Defaults to None.
+            interp_order (str, optional):      Interpolation order for the DA average: '1D', '2D', '4D'. Defaults to '1D'.
+            interp_method (str, optional):     Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson'. Defaults to 'trapz'.
+            force (bool, optional):            Flag for reseting the da and border DataFrames. Defaults to False.
+            save (bool, optional):             Flag for saving da and border DataFrames in files. Defaults to True.
+        """
 
         if self.survival_data is None:
             raise ValueError('Run the simulation before using plot_particles.')
@@ -1435,13 +1481,13 @@ or for multiseeds:
             interp=alter_simpson
         else:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
-        
+
         # Initialize input and da array
         if at_turn is None:
             at_turn=self.max_turns
         if at_turn > self.max_turns:
             raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
-            
+
         if not force:
             self.read_da()
             self.read_border()
@@ -1455,7 +1501,7 @@ or for multiseeds:
             self._border=pd.DataFrame(columns=['t','seed', 'id lower','id upper'])
         if at_turn in self._da['t']:
             return
-        
+
         # Select data per seed if needed
         data=self.survival_data.copy()
         data['id']= data.index
@@ -1480,7 +1526,7 @@ or for multiseeds:
         ang_range=(self.meta.ang_min,self.meta.ang_max)
         mask_da     = [True] * len(self._da)
         mask_border = [True] * len(self._border)
-        
+
         # Run DA raw border detection
 #         sys.stdout.write(f'seed {0:>3d}')
         idx = 0
@@ -1494,7 +1540,7 @@ or for multiseeds:
             if self.da_type == 'radial' and list_new_border[idx].isnull().values.any():
                 print('Warning: the sample was too small and this estimation will be biased ' \
                       +f'(seed {ss}, at_turn {ss}, nb missing values: {list_new_border[idx].isnull().values.sum()})!')
-    
+
             mask_da     = mask_da     & ~( ( self._da.seed    ==ss ) & ( self._da.t    ==at_turn ) )
             mask_border = mask_border & ~( ( self._border.seed==ss ) & ( self._border.t==at_turn ) )
             idx += 1
@@ -1532,13 +1578,13 @@ or for multiseeds:
 #                         border_min['amplitude'].append(max_amplitude_surv)
 #                         border_min['angle'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'angle'].values[0])
 #                         border_min['id'].append(section_surv.loc[section_surv['amplitude']==max_amplitude_surv,'id'].values[0])
-                        
+
 #                 elif not section_loss.empty:
 #                     min_amplitude_loss=min(section_loss['amplitude'])
 #                     border_max['amplitude'].append(min_amplitude_loss)
 #                     border_max['angle'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'angle'].values[0])
 #                     border_max['id'].append(section_loss.loc[section_loss['amplitude']==min_amplitude_loss,'id'].values[0])
-                    
+
 #                 elif not section_surv.empty:
 #                     max_amplitude_surv=max(section_surv['amplitude'])
 
@@ -1577,18 +1623,18 @@ or for multiseeds:
                             upper=border_min.loc[border_min['angle']==min(border_min['angle'][border_min['angle']>ploss['angle']]),:]
                             lower_amp=lower['amplitude'].tolist()[0] ; lower_ang=lower['angle'].tolist()[0]
                             upper_amp=upper['amplitude'].tolist()[0] ; upper_ang=upper['angle'].tolist()[0]
-                            
+
                             # Remove lower border point too high for the losses
                             if lower_amp < upper_amp:
                                 border_min.drop(index=upper.index.values, inplace=True)
                                 upper=border_min.loc[border_min['angle']==min(border_min['angle'][border_min['angle']>ploss['angle']]),:]
                                 upper_amp=upper['amplitude'].tolist()[0] ; upper_ang=upper['angle'].tolist()[0]
-                                
+
                             else:
                                 border_min.drop(index=lower_amp, inplace=True)
                                 lower=border_min.loc[border_min['angle']==max(border_min['angle'][border_min['angle']<ploss['angle']]),:]
                                 lower_amp=lower['amplitude'].tolist()[0] ; lower_ang=lower['angle'].tolist()[0]
-                                
+
                             # Add surv particle to lower border point near the previous part was removed
                             candidate=surv.loc[(surv['angle']<upper_ang) & (surv['angle']>lower_ang) & (surv['amplitude']<ploss['amplitude']),['id','angle','amplitude']]
                             if not candidate.empty:
@@ -1607,7 +1653,7 @@ or for multiseeds:
             else:
                 row=f't{at_turn} s{ss}'
 #             self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
-            
+
         self._da     = pd.concat([self._da[    mask_da    ], *list_new_da    ], ignore_index=True)
         self._border = pd.concat([self._border[mask_border], *list_new_border], ignore_index=True)
 #             new_da=pd.DataFrame({'DA lower':    [compute_da_1D(border_min['angle'], border_min['amplitude'], ang_range)],
@@ -1618,19 +1664,19 @@ or for multiseeds:
 #                                  'DAmax upper': [max(border_max['amplitude'])]
 #                                 })
 #             self._da=concat(self._da,new_da,seed=ss,t=at_turn)
-            
+
 # #             border_min['seed']=ss; border_min['t']=at_turn;
 #             self._border=concat(self._border,
 #                                 border_min.rename(columns={'angle':'ang lower', 'amplitude':'amp lower', 'id':'id lower'}, 
 #                                                   inplace=False),
 #                                 seed=ss,t=at_turn)
-            
+
 # #             border_max['seed']=ss; border_max['t']=at_turn;
 #             self._border=concat(self._border,
 #                                 border_max.rename(columns={'angle':'ang upper', 'amplitude':'amp upper', 'id':'id upper'}, 
 #                                                   inplace=False),
 #                                 seed=ss,t=at_turn)
-    
+
 #             self._da.loc[row,'seed']= ss
 #             self._da.loc[row,'t']   = at_turn
 #             self._da.loc[row,'DA lower']   = compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
@@ -1639,61 +1685,56 @@ or for multiseeds:
 #             self._da.loc[row,'DA upper']   = compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
 #             self._da.loc[row,'DAmin upper']= min(border_max['amplitude'])
 #             self._da.loc[row,'DAmax upper']= max(border_max['amplitude'])
-                
+
 #             if self.meta.nseeds==0:
 #                 self._lower_davsturns.loc[at_turn,'turn'  ]=at_turn
 #                 self._lower_davsturns.loc[at_turn,'border']=[ border_min ]
 #                 self._lower_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'], border_min['amplitude'],ang_range)
 #                 self._lower_davsturns.loc[at_turn,'min'   ]=min(border_min['amplitude'])
 #                 self._lower_davsturns.loc[at_turn,'max'   ]=max(border_min['amplitude'])
-                
+
 #                 self._upper_davsturns.loc[at_turn,'turn'  ]=at_turn
 #                 self._upper_davsturns.loc[at_turn,'border']=[ border_max ]
 #                 self._upper_davsturns.loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'], border_max['amplitude'],ang_range)
 #                 self._upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                 self._upper_davsturns.loc[at_turn,'max'   ]=max(border_max['amplitude'])
 #             else:
-                
+
 #                 self._lower_davsturns[ss].loc[at_turn,'turn'  ]=at_turn
 #                 self._lower_davsturns[ss].loc[at_turn,'border']=[ border_min ]
 #                 self._lower_davsturns[ss].loc[at_turn,'avg'   ]=compute_da_1D(border_min['angle'],border_min['amplitude'],ang_range)
 #                 self._lower_davsturns[ss].loc[at_turn,'min'   ]=min(border_min['amplitude'])
 #                 self._lower_davsturns[ss].loc[at_turn,'max'   ]=max(border_min['amplitude'])
-                
+
 #                 self._upper_davsturns[ss].loc[at_turn,'turn'  ]=at_turn
 #                 self._upper_davsturns[ss].loc[at_turn,'border']=[ border_max ]
 #                 self._upper_davsturns[ss].loc[at_turn,'avg'   ]=compute_da_1D(border_max['angle'],border_max['amplitude'],ang_range)
 #                 self._upper_davsturns[seed].loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                 self._upper_davsturns[seed].loc[at_turn,'max'   ]=max(border_max['amplitude'])
         sys.stdout.write(f'Computing DA at turn {at_turn} succesfully end!\n')
-    
+
         if save:
             self.write_da()
             self.write_border()
 
 
-    
+
     # Not allowed on parallel process
-    def calculate_davsturns(self, from_turn=1e3, to_turn=None, bin_size=1, 
-                            interp_order='1D', interp_method='trapz', force=False, save=True):#,nsteps=None
-        '''Compute the DA upper and lower evolution from a specific turn to another in the form of a pandas table:
-    ['turn','border','avg','min','max']
-    
-or for multiseeds:
-    { seed:['turn','border','avg','min','max'],  'stat':['turn','avg','min','max'] }
-        
-    
-    Parameters
-    ----------
-    from_turn:     First turn at which this estimation must be computed (Default=1e3).
-    to_turn:       Last turn at which this estimation must be computed (Default=max_turns).
-    bin_size:      The turns is slice by this number (Default=1).
-    interp_order:  Interpolation order for the DA average: '1D', '2D', '4D' (Default='1D').
-    interp_method: Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson' (Default='1D').
-    force:         Reset the da analysis (Default=False).
-    save:          Save da and border DataFrames in files (Default=True).
-'''
-            
+    # TODO: Fix description to fit the new data format
+    def calculate_davsturns(self, from_turn: int=1, to_turn: Union[int,None]=None, bin_size: int=1, 
+                            interp_order: str='1D', interp_method: str='trapz', force: bool=False, save: bool=True):
+        """Compute the DA upper and lower evolution from a specific turn to another in the form of a pandas table ['turn','border','avg','min','max'] or for multiseeds { seed:['turn','border','avg','min','max'],  'stat':['turn','avg','min','max'] }
+
+        Args:
+            from_turn (int, optional):      First turn at which this estimation must be computed. Defaults to 1.
+            to_turn (int | None, optional): Last turn at which this estimation must be computed. Defaults to max_turns.
+            bin_size (int, optional):       The turns is slice by this number. Defaults to 1.
+            interp_order (str, optional):   Interpolation order for the DA average: '1D', '2D', '4D'. Defaults to '1D'.
+            interp_method (str, optional):  Interpolation method for the DA average: 'trapz', 'simpson', 'alternative_simpson'. Defaults to 'trapz'.
+            force (bool, optional):         Flag reseting the da analysis. Defaults to False.
+            save (bool, optional):          Flag for the saving da and border DataFrames in files. Defaults to True.
+        """
+
         # Initialize input and da array
         if to_turn is None:
             to_turn=self.max_turns
@@ -1705,10 +1746,10 @@ or for multiseeds:
         elif interp_order=='2D':
             compute_da=compute_da_2D
         elif interp_order=='4D':
-            compute_da=compute_da_3D
+            compute_da=compute_da_4D
         else:
             raise ValueError("interp_order must be either: '1D', '2D' or '4D'!")
-            
+
         if interp_method=='trapz':
             interp=trapz
         elif interp_method=='simpson':
@@ -1718,7 +1759,7 @@ or for multiseeds:
         else:
             raise ValueError("interp_method must be either: 'trapz', 'simpson', 'alternative_simpson'!")
         ang_range=(self.meta.ang_min,self.meta.ang_max)
-            
+
 #         if self._lower_davsturns is None or (self.meta.nseeds==0 and to_turn not in self._lower_davsturns)or  (self.meta.nseeds>0 and to_turn not in self._lower_davsturns[1]):
         if force:
             self._da = None
@@ -1726,8 +1767,8 @@ or for multiseeds:
         if self._da is None or to_turn not in self._da['t']:
             self.calculate_da(at_turn=to_turn, smoothing=True, 
                               interp_order=interp_order, interp_method=interp_method, force=force, save=False) 
-            
-            
+
+
         # Load particle data
         data = self.survival_data.copy()
         data['id']= data.index
@@ -1736,7 +1777,7 @@ or for multiseeds:
         if self.da_type not in ['monte_carlo', 'free']:
             # Create the round_angle columns
             data['round_angle']= data['angle']
-            
+
 #             import time
 #             ti = time.time()
 
@@ -1744,7 +1785,7 @@ or for multiseeds:
             lturns=np.sort(np.unique(bin_size*np.floor(self.survival_data.nturns/bin_size)))
             lturns=lturns[(lturns>from_turn) & (lturns<to_turn)]
             lturns=np.unique([from_turn, *lturns, to_turn]).astype(int)
-            
+
             # Remove turns already computed
             if self.meta.nseeds==0:
                 lturns=np.sort(list(set(lturns) - set(self.t_steps)))
@@ -1756,7 +1797,7 @@ or for multiseeds:
                 list_new_border = np.array([None for ii in range(len(lturns)*self.meta.nseeds)])
             mask_da     = [True] * len(self._da)
             mask_border = [True] * len(self._border)
-                
+
 #             te = time.time(); print(f"calculate_davsturns: pre loop {te-ti:.4}s") ; ti = te;
 
             # Loop in turn to compute the da
@@ -1767,7 +1808,7 @@ or for multiseeds:
 #                     list_seed=None
 #                 else:
 #                     list_seed=np.sort(np.unique(self.survival_data.loc[self.survival_data.nturns==at_turn,'seed']))
-                    
+
                 if self.meta.nseeds==0:
                     list_seed=[ 0 ]
                     list_data=[ data ]
@@ -1779,9 +1820,9 @@ or for multiseeds:
                     list_data=[ data.loc[data.seed==s,:] for s in list_seed ]
                     
 #                 te = time.time(); print(f"calculate_davsturns: select in loop1 {te-ti:.4}s") ; ti = te;
-                
+
 #                 self.calculate_da(at_turn=at_turn,angular_precision=1,smoothing=False,list_seed=list_seed)
-        
+
                 # Run DA raw border detection
 #                 sys.stdout.write(f'seed {0:>3d}')
                 for ss,dd in zip(list_seed,list_data):
@@ -1791,7 +1832,7 @@ or for multiseeds:
 #                     border_min, border_max =_da_raw(dd,at_turn,seed,compute_da, ang_range)
                     list_new_da[idx], list_new_border[idx] =_da_raw(dd,at_turn,ss,compute_da, ang_range)
 #                     te = time.time(); print(f"calculate_davsturns: da_raw in loop2 {te-ti:.4}s") ; ti = te;
-            
+
 #                     self._set_da_and_border(ss,at_turn,border_min,border_max,ang_range)
 #                     te = time.time(); print(f"calculate_davsturns: set_da in loop2 {te-ti:.4}s") ; ti = te;
                     
@@ -1835,7 +1876,7 @@ or for multiseeds:
                 else:
                     lturns=np.array([at_turn for at_turn in lturns if any([at_turn not in t_steps[seed] for seed in range(1,self.meta.nseeds+1)]) ])
 
-                
+
                 upper_notmonotonius=False
 #                 border_min=lower_davsturns.loc[to_turn,'border'][0]
 #                 DA_lim_max=max(upper_davsturns.loc[to_turn,'border'][0]['amplitude'])
@@ -1887,8 +1928,8 @@ or for multiseeds:
 
                             # Save DA
                             self._set_da_and_border(seed,rc,border_min,border_max,ang_range)
-                            
-                            
+
+
 #                             lower_davsturns.loc[rc,'border']=[ border_min ]
 #                             lower_davsturns.loc[rc,'avg'   ]=compute_da(border_min['angle'],
 #                                                                         border_min['amplitude'],ang_range,interp)
@@ -1938,7 +1979,7 @@ or for multiseeds:
 #                                                                      ang_range,interp)
 #                     upper_davsturns.loc[at_turn,'min'   ]=min(border_max['amplitude'])
 #                     upper_davsturns.loc[at_turn,'max'   ]=DA_lim_max=max(border_max['amplitude'])
-                    
+
                 if upper_notmonotonius:
                     print("#TODO: Rework the monoticity routine")
                     #TODO: Rework the monoticity routine
@@ -1949,17 +1990,17 @@ or for multiseeds:
 #                         at_turn=lturns[idx]
 #                         DA_lim_max=prev_DA_lim_max
 #                         raw_DA_lim_max=upper_davsturns.loc[at_turn,'max']
-                        
+
 #                         if raw_DA_lim_max>DA_lim_max:
 #                             raw_DA_lim_min=lower_davsturns.loc[at_turn,'min']
 #                             raw_border_min=lower_davsturns.loc[at_turn,'border'][0]
 #                             raw_border_max=upper_davsturns.loc[at_turn,'border'][0]
-                            
+
 #                             # Remove border particles higher than the upper limit
 #                             raw_border_max=raw_border_max.loc[raw_border_max['amplitude']<=DA_lim_max]
 #                             fit_max=fit_DA(raw_border_max['angle'], raw_border_max['amplitude'], ang_range)
 #                             raw_border_min=raw_border_min.loc[raw_border_min['amplitude']<=fit_max(raw_border_min['angle'])]
-                            
+
 #                             # Add new surviving particles to lower da border and smooth da borders
 #                             DA_lim_min=min(raw_border_min['amplitude'])
 #                             new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,
@@ -1969,7 +2010,7 @@ or for multiseeds:
 
 #                             # Save DA
 #                             self._set_da_and_border(seed,at_turn,new_border_min,new_border_max,ang_range)
-                            
+
 #                             lower_davsturns.loc[at_turn,'border']=[ new_border_min ]
 #                             lower_davsturns.loc[at_turn,'avg'   ]=compute_da(new_border_min['angle'],
 #                                                                              new_border_min['amplitude'],ang_range,interp)
@@ -1982,10 +2023,10 @@ or for multiseeds:
 #                                                                              new_border_max['amplitude'],ang_range,interp)
 #                             upper_davsturns.loc[at_turn,'min'   ]=min(new_border_max['amplitude'])
 #                             upper_davsturns.loc[at_turn,'max'   ]=max(new_border_max['amplitude'])
-                            
+
 #                             prev_DA_lim_min=min(new_border_min['amplitude'])
 #                             prev_DA_lim_max=max(new_border_max['amplitude'])
-                            
+
 #                             # Recheck previous turns for non-monoticity of the lower DA estimation
 #                             DA_lim_min=prev_DA_lim_min
 #                             border_min=new_border_min
@@ -1995,8 +2036,8 @@ or for multiseeds:
 #                                         raw_border_min=border_min #lower_davsturns.loc[rc,'border'][0]
 #                                         raw_border_max=upper_davsturns.loc[rc,'border'][0]
 #                                         DA_lim_max=upper_davsturns.loc[rc,'max']
-                                    
-                                        
+
+
 #                                         new_border_min,new_border_max=_da_smoothing(data,raw_border_min,raw_border_max,
 #                                                                                     at_turn=rc,removed=removed,
 #                                                                                     DA_lim_min=DA_lim_min,DA_lim_max=DA_lim_max,
@@ -2013,7 +2054,7 @@ or for multiseeds:
 
 #                                         # Save DA
 #                                         self._set_da_and_border(seed,rc,new_border_min,new_border_max,ang_range)
-                            
+
 #                                         lower_davsturns.loc[rc,'border']=[ new_border_min ]
 #                                         lower_davsturns.loc[rc,'avg'   ]=compute_da(new_border_min['angle'],
 #                                                                                     new_border_min['amplitude'],
@@ -2027,22 +2068,22 @@ or for multiseeds:
 #                                                                                     ang_range,interp)
 #                                         upper_davsturns.loc[rc,'min'   ]=min(new_border_max['amplitude'])
 #                                         upper_davsturns.loc[rc,'max'   ]=max(new_border_max['amplitude'])
-                                    
+
 #                                         border_min=new_border_min
 #                                         DA_lim_min=lower_davsturns.loc[rc,'min']
-                                
+
 
 #                         else:
 #                             prev_DA_lim_max=raw_DA_lim_max
-                        
-                    
+
+
 #                 if self.meta.nseeds==0:
 #                     self._lower_davsturns=lower_davsturns
 #                     self._upper_davsturns=upper_davsturns
 #                 else:
 #                     self._lower_davsturns[seed]=lower_davsturns
 #                     self._upper_davsturns[seed]=upper_davsturns
-                    
+
         # For the multiseeds case, generate the summary as 'stat' over all the seeds
         if self.meta.nseeds!=0:
             print("#TODO: Rework stat routine")
@@ -2093,20 +2134,28 @@ or for multiseeds:
     # =================================================================
 
     # Not allowed on parallel process
-    def _fit_model(self,nb_param,data_type,model,name='user',model_default={},model_boundary={},model_mask=None,
-                   seed=None,nrand=1000,nsig=2,ntry=2,save=True,force=False, fix_seed=True):
-        '''DA vs turns fitting procedure.
+    def _fit_model(self, nb_param: int, data_type: tuple[str,str], model: Union[list,function], name: str='user', 
+                   model_default: dict={}, model_boundary: dict={}, model_mask: Union[function,None]=None, seed: Union[int,None]=None, 
+                   nrand: int=1000, nsig: int=2, ntry: int=2, save: bool=True, force: bool=False, fix_seed: bool=True):
+        """DA vs turns fitting procedure.
 
-    Parameters
-    ----------
-    nb_param:       Number of parameter from the Model used.
-    data_type:      Which data is used as a tuplet: (type1,type2) with type1 in ['lower','upper','uniform','normal'] and type2 in ['min','max','avg'].
-    model:          Either an element from ['2','2b','2n','4','4b','4n'] or a function. In the later case, also give model_default and model_boundary.
-    model_default:  A dict of the model parameters default values with parameters name as keys.
-    model_boundary: A dict of the model parameters boundarie with parameters name as keys.
-    seed:           The seed number for the multisees case.
-    force:          Erase previous results (Default=False).
-    '''
+        Args:
+            nb_param (int):                         Number of parameter from the Model used.
+            data_type (tuple[str,str]):             Which data is used as a tuplet: (type1,type2) with type1 in ['lower','upper','uniform','normal'] and type2 in ['min','max','avg'].
+            model (list | function):                Either an element from ['2','2b','2n','4','4b','4n'] or a function. In the later case, also give model_default and model_boundary.
+            name (str, optional):                   Name of the model in the dataframe if not a builtin one. Defaults to 'user'.
+            model_default (dict, optional):         A dict of the model parameters default values with parameters name as keys. Defaults to {}.
+            model_boundary (dict, optional):        A dict of the model parameters boundarie with parameters name as keys. Defaults to {}.
+            model_mask (function | None, optional): Mask function filtering the allowed data for the fitting procedure. Defaults to None.
+            seed (int | None, optional):            The seed number for the multisees case. Defaults to None.
+            nrand (int, optional):                  Number of points/try for the normal and uniform fitting. Defaults to 1000.
+            nsig (int, optional):                   Scaling of distribution for the normal and uniform fitting. Defaults to 2.
+            ntry (int, optional):                   Number of try for the normal and uniform fitting. Defaults to 2.
+            save (bool, optional):                  Flag to save the results. Defaults to True.
+            force (bool, optional):                 Flag to erase previous results. Defaults to False.
+            fix_seed (bool, optional):              Flag to fix the seed generation normal and uniform fitting.  Defaults to True.
+        """
+        
         if self._da_model is None:
             self.read_da_model()
 
@@ -2230,11 +2279,6 @@ or for multiseeds:
             res.index=row
             res[f'seed']= seed
             res[f'fit']= dtemp+' '+data_type[0]
-# <<<<<<<<<<<<<<<<<<< debug
-#         print('res=')
-#         print(res)
-#         print()
-# <<<<<<<<<<<<<<<<<<< debug
 
         # Save results
         self._da_model=concat(self._da_model,res.loc[row,:],seed=seed,fit=dtemp+' '+data_type[0])
@@ -2247,18 +2291,17 @@ or for multiseeds:
 
             
     # Not allowed on parallel process
-    def _fit_model_from_list(self,nb_param,list_data_types=None,list_models=['2','2b','2n','4','4b','4n'],
-                             list_seeds=None,nrand=1000,nsig=2,ntry=1,force=False):
-        '''DA vs turns fitting procedure for a list of data_types, model or seed.
-    
-    Parameters
-    ----------
-    nb_param:        Number of parameter from the Model used.
-    list_data_types: List of data types as defined in `_fit_model`.
-    list_models:     List of in-build model as defined in `_fit_model`.
-    list_seeds:      List of seeds for the multiseed case (Default=None).
-    force:           Erase previous results (Default=False).
-    '''
+    def _fit_model_from_list(self, nb_param: int, list_data_types: Union[list,None]=None, list_models: list=['2','2b','2n','4','4b','4n'],
+                             list_seeds: Union[list,None]=None, **kwargs):
+                            # list_seeds: Union[list,None]=None, nrand: int=1000, nsig: int=2, ntry: int=1, force: bool=False):
+        """DA vs turns fitting procedure for a list of data_types, model or seed.
+
+        Args:
+            nb_param (int):                               Number of parameter from the Model used.
+            list_data_types (list | None, optional): List of data types as defined in `_fit_model`. Defaults to None.
+            list_models (list, optional):                 List of in-build model as defined in `_fit_model`. Defaults to ['2','2b','2n','4','4b','4n'].
+            list_seeds (list | None, optional):      List of seeds for the multiseed case. Defaults to None.
+        """
         if list_data_types is None:
 #             list_data_types=[f'{d1}_{d2}' for d1 in ['lower','upper','uniform','normal'] for d2 in ['min','avg','max']]
             list_data_types=[(d1,d2) for d1 in ['lower','upper','uniform','normal'] for d2 in ['min','avg','max']]
@@ -2272,30 +2315,29 @@ or for multiseeds:
             for md in list_models:
                 for ss in list_seeds:
                     self._fit_model(nb_param=nb_param,data_type=dt,model=md,seed=ss,
-                                    nrand=nrand,nsig=nsig,save=False,force=False)
+                                    save=False,**kwargs)
+                                    #nrand=nrand,ntry=ntry,nsig=nsig,save=False,force=force)
         
         self._da_model=self._da_model.fillna(-1)
         self.write_da_model()
         
         
     # Not allowed on parallel process
-    def get_model_parameters(self,data_type,model,nb_parm,keys=None,seed=None,name='user'):
-        '''DA vs turns fitting procedure for a list of data_types, model or seed.
-
-    Parameters
-    ----------
-    data_type: Data types as defined in `_fit_model`.
-    nb_param:  Number of parameter from the Model used.
-    model:     List of in-build model as defined in `_fit_model`. If it's not a build in model, please also give parameter name in keys.
-    key:       List of parameters name (Default=None).
-    seed:      Seed number for the multiseed case (Default=None).
-
-    Outputs:
-    ----------
-    model:     A function.
-    Parameter: Dict. of parameters with their values after the fit.
-    Residual:  Residut from the fiting as a `float`.
-    '''
+    def get_model_parameters(self, data_type: list[str], model: Union[str,function], nb_parm: int,
+                             keys: Union[list,None]=None, seed: Union[list,None]=None, name: str='user') -> tuple[function , dict, float]:
+        """DA vs turns fitting procedure for a list of data_types, model or seed.
+        Args:
+            data_type (list[str]):        Data types as defined in `_fit_model`.
+            model (str or func):          List of in-build model as defined in `_fit_model`. If it's not a build in model, please also give parameter name in keys.
+            nb_parm (int):                Number of parameter from the Model used.
+            keys (list | None, optional): List of parameters name. Defaults to None.
+            seed (int, optional):         Seed number for the multiseed case. Defaults to None.
+            name (str, optional):         Name of the model if nodel is a function. Defaults to 'user'.
+            
+        Returns:
+            (func, dict, float):  The model as a `function`; a `dict` of parameters with their values after the fit; and the Residut from the fiting.
+        
+        """
         if self._da_model is None:
             self.read_da_model()
         if self._da_model is None:
@@ -2351,7 +2393,7 @@ or for multiseeds:
     # =================================================================
 
     # Allowed on parallel process
-    def _create_job(self, npart=None, logging=True, force_single_seed_per_job=None):
+    def _create_job(self, npart: Union[int,None]=None, logging: bool=True, force_single_seed_per_job:Union[bool,None]=None):
         def _get_seeds_and_stuff(npart, logging):
             mask = (self._surv['submitted'] == False)
 #             if npart is None:
@@ -2482,6 +2524,11 @@ or for multiseeds:
         return self.meta._use_files and self.meta.surv_file.exists()
 
     def read_surv(self, pf=None):
+        """Load the surv dataframe containing the particles informations into a file.
+
+        Args:
+            pf ([type], optional): File object used for loading. Defaults to None.
+        """
         if self.surv_exists():
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2496,6 +2543,11 @@ or for multiseeds:
             return None
 
     def write_surv(self, pf=None):
+        """Save the surv dataframe containing the particles informations into a file.
+
+        Args:
+            pf ([type], optional): File object used for saving. Defaults to None.
+        """
         if self.meta._use_files and not self.meta._read_only:
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2512,6 +2564,11 @@ or for multiseeds:
         return self.meta._use_files and self.meta.da_file.exists()
 
     def read_da(self, pf=None):
+        """Load the da border dataframe into a file.
+
+        Args:
+            pf ([type], optional): File object used for Loading. Defaults to None.
+        """
         if self.da_exists():
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2526,6 +2583,11 @@ or for multiseeds:
             return None
 
     def write_da(self, pf=None):
+        """Save the da dataframe into a file.
+
+        Args:
+            pf ([type], optional): File object used for saving. Defaults to None.
+        """
         if self.meta._use_files and not self.meta._read_only:
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2542,6 +2604,11 @@ or for multiseeds:
         return self.meta._use_files and self.meta.border_file.exists()
 
     def read_border(self, pf=None):
+        """Loading the da border dataframe into a file.
+
+        Args:
+            pf ([type], optional): File object used for loading. Defaults to None.
+        """
         if self.border_exists():
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2557,6 +2624,11 @@ or for multiseeds:
             return None
 
     def write_border(self, pf=None):
+        """Save the da border dataframe into a file.
+
+        Args:
+            pf ([type], optional): File object used for saving. Defaults to None.
+        """
         if self.meta._use_files and not self.meta._read_only:
             if self.meta.db_extension=='parquet':
                 self._border.fillna(-1)
@@ -2576,6 +2648,11 @@ or for multiseeds:
         return self.meta._use_files and self.meta.da_evol_file.exists()
 
     def read_da_evol(self, pf=None):
+        """Load the da evol file.
+
+        Args:
+            pf ([type], optional): File object used for loading. Defaults to None.
+        """
         if self.da_evol_exists():
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2590,6 +2667,11 @@ or for multiseeds:
             return None
 
     def write_da_evol(self, pf=None):
+        """Save the da evol file.
+
+        Args:
+            pf ([type], optional): File object used for saving. Defaults to None.
+        """
         if self.meta._use_files and not self.meta._read_only:
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2606,6 +2688,11 @@ or for multiseeds:
         return self.meta._use_files and self.meta.da_model_file.exists()
 
     def read_da_model(self, pf=None):
+        """Load the da models parameters into a file.
+
+        Args:
+            pf ([type], optional): File object used for loading. Defaults to None.
+        """
         if self.da_model_exists():
             if self.meta.db_extension=='parquet':
                 if pf is None:
@@ -2627,6 +2714,11 @@ or for multiseeds:
             self._da_model = None
 
     def write_da_model(self, pf=None):
+        """Save the da models parameters into a file.
+
+        Args:
+            pf ([type], optional): File object used for saving. Defaults to None.
+        """
         if self.meta._use_files and not self.meta._read_only:
             if self.meta.db_extension=='parquet':
                 self._da_model.fillna(-1)
@@ -2649,7 +2741,7 @@ or for multiseeds:
             
     
     # =================================================================
- 
+
     def convert_to_radial(self):
         # impossible; only to add dimensions or something like that
         raise NotImplementedError
@@ -2793,19 +2885,19 @@ def get_border_max(DA,seed,t):
 
 # Function loading SixDesk/SixDB outputs into XDyna
 # --------------------------------------------------------
-def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add reference emitance, if emittance difference from file inform that if BB some results will be wrong
+def load_sixdesk_output(path, study, nemit=None, load_line: bool=False): # TODO: Add reference emitance, if emittance difference from file inform that if BB some results will be wrong
     ## SIXDESK
     ## -----------------------------------
     # Load meta
     meta=pd.read_csv(path+'/'+study+".meta.csv",header=0); meta=meta.set_index('keyname')
-    
+
     # Load polar
-    tp=pd.read_csv(path+'/'+study+".polar.csv",header=0)
-    polar_seed =tp.loc[:,'seed'].values
-    polar_ang  =tp.loc[:,'angle'].values
-    polar_DA_P =tp.loc[:,'alost2'].values
-    polar_DA_P1=tp.loc[:,'alost1'].values
-    
+    # tp=pd.read_csv(path+'/'+study+".polar.csv",header=0)
+    # polar_seed =tp.loc[:,'seed'].values
+    # polar_ang  =tp.loc[:,'angle'].values
+    # polar_DA_P =tp.loc[:,'alost2'].values
+    # polar_DA_P1=tp.loc[:,'alost1'].values
+
     # Load surv
     tp=pd.read_csv(path+'/'+study+".surv.csv",header=0)
     surv_seed =tp.loc[:,'seed'].values
@@ -2813,8 +2905,8 @@ def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add r
     surv_amp  =tp.loc[:,'amp'].values
     surv_ntrn1=tp.loc[:,'sturns1'].values
     surv_ntrn2=tp.loc[:,'sturns2'].values
-    
-    
+
+
     ## META
     ## -----------------------------------
     if not Path(path,study+'.meta.json').exists():
@@ -2825,12 +2917,12 @@ def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add r
                    max_turns=int(meta.loc['turnsl','value']), 
                    nseeds=max(surv_seed),                        # For multiseed study (Default=0)
                    use_files=True)
-    
+
     else:
         # Load the study metadata"
         sixdb_da = DA(name=study, path=Path(path), use_files=True)
-    
-    
+
+
     ## LINE
     ## -----------------------------------
     if sixdb_da.line_file is None and load_line:
@@ -2904,8 +2996,9 @@ def load_sixdesk_output(path, study, nemit=None, load_line=False): # TODO: Add r
         sixdb_da.meta.npart = len(sixdb_da._surv.index)
         
         if nemit is not None:
-            warnings.warn(f"A renormalisation of emittances is applyed ({sixdb_da.nemitt_x} -> {nemit}). This might lead to error in the analysis.")
-            self.update_emittance(nemit, update_surv=True)
+            warnings.warn(f"A renormalisation of emittances is applyed ([{sixdb_da.nemitt_x},{sixdb_da.nemitt_y}] -> {nemit}). "
+                          + "This might lead to error in the analysis especially for Beam-beam simulations.")
+            sixdb_da.update_emittance(nemit, update_surv=True)
     
     sixdb_da.meta._store()
     return sixdb_da

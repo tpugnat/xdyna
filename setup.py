@@ -40,16 +40,17 @@ setup(
     include_package_data=True,
     install_requires=[
         'numpy>=1.0',
+        'scipy>=1.9.3',
         "pandas>=2.0",
         'matplotlib',
         'pyarrow',
-        'scipy',
 #         'json',
         'xobjects',
         'xdeps',
         'xtrack',
         'xpart',
         'xaux',
+        'xfields',
         'cpymad',
         ],
     extras_require={
