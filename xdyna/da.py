@@ -2134,8 +2134,8 @@ class DA:
     # =================================================================
 
     # Not allowed on parallel process
-    def _fit_model(self, nb_param: int, data_type: tuple[str,str], model: Union[list,function], name: str='user', 
-                   model_default: dict={}, model_boundary: dict={}, model_mask: Union[function,None]=None, seed: Union[int,None]=None, 
+    def _fit_model(self, nb_param: int, data_type: tuple[str,str], model, name: str='user', 
+                   model_default: dict={}, model_boundary: dict={}, model_mask=None, seed: Union[int,None]=None, 
                    nrand: int=1000, nsig: int=2, ntry: int=2, save: bool=True, force: bool=False, fix_seed: bool=True):
         """DA vs turns fitting procedure.
 
@@ -2323,8 +2323,8 @@ class DA:
         
         
     # Not allowed on parallel process
-    def get_model_parameters(self, data_type: list[str], model: Union[str,function], nb_parm: int,
-                             keys: Union[list,None]=None, seed: Union[list,None]=None, name: str='user') -> tuple[function , dict, float]:
+    def get_model_parameters(self, data_type: list[str], model, nb_parm: int,
+                             keys: Union[list,None]=None, seed: Union[list,None]=None, name: str='user'): # -> tuple[function , dict, float]:
         """DA vs turns fitting procedure for a list of data_types, model or seed.
         Args:
             data_type (list[str]):        Data types as defined in `_fit_model`.

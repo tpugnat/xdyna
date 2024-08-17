@@ -263,7 +263,7 @@ def select_model(model,model_default={},model_boundary={},model_mask=Model_user_
 
 # DA raw estimation
 # --------------------------------------------------------
-def _da_raw(data,at_turn: int,seed: int,compute_da: function,ang_range: list, interp: function=trapz):
+def _da_raw(data,at_turn: int,seed: int,compute_da, ang_range: list, interp=trapz):
     """Function estimating the DA border from the raw data.
 
     Args:
