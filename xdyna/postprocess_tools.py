@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy import interpolate, integrate
+from scipy import interpolate
 from scipy.special import lambertw as W
 
 
@@ -14,10 +14,6 @@ def trapz(x, y, xrange):
     """
     x=np.array(x); y=np.array(y); sort=np.argsort(x); 
     x=x[sort]; y=y[sort]
-#     D=integrate.trapezoid(x=x*np.pi/180, y=np.ones(x.size))
-#     return np.sqrt( 2/np.pi*integrate.trapezoid(x=x*np.pi/180, y=y**2) )
-#     return np.sqrt( integrate.trapezoid(x=x*np.pi/180, y=y**2)/D )
-#     return integrate.trapezoid(x=x*np.pi/180, y=y)/D
     
     res =y[0]*(x[0]-xrange[0]) + y[-1]*(xrange[1]-x[-1])          # Lower and upper open border schema
     res+= (0.5)*( ( y[1:] + y[:-1] )*(x[1:] - x[:-1]) ).sum()     # Close border schema
@@ -241,24 +237,24 @@ def select_model(model,model_default={},model_boundary={},model_mask=Model_user_
     return name, model, mdefault, mboundary, mmask
             
             
-    model=model.lower()
-    if isinstance(model,str):
-        if model in ['model_2','model_2b','model_2n','model_4','model_4b','model_4n',
-                     '2','2b','2n','4','4b','4n']:
-            if ('model_2' ==model) or ('2' ==model):
-                name='2';  model=Model_2;   keys=[k for k in Model_2_default.keys()];
-            if ('model_2b'==model) or ('2b'==model):
-                name='2b'; model=Model_2b;  
-            if ('model_2n'==model) or ('2n'==model):
-                name='2n'; model=Model_2n;  
-            if ('model_4' ==model) or ('4' ==model):
-                name='4';  model=Model_4;   
-            if ('model_4b'==model) or ('4b'==model):
-                name='4b'; model=Model_4b;  
-            if ('model_4n'==model) or ('4n'==model):
-                name='4n'; model=Model_4n;  
-    elif keys is None:
-            raise ValueError('Please specify the parameters name as keys.')
+    # model=model.lower()
+    # if isinstance(model,str):
+    #     if model in ['model_2','model_2b','model_2n','model_4','model_4b','model_4n',
+    #                  '2','2b','2n','4','4b','4n']:
+    #         if ('model_2' ==model) or ('2' ==model):
+    #             name='2';  model=Model_2;   keys=[k for k in Model_2_default.keys()];
+    #         if ('model_2b'==model) or ('2b'==model):
+    #             name='2b'; model=Model_2b;  
+    #         if ('model_2n'==model) or ('2n'==model):
+    #             name='2n'; model=Model_2n;  
+    #         if ('model_4' ==model) or ('4' ==model):
+    #             name='4';  model=Model_4;   
+    #         if ('model_4b'==model) or ('4b'==model):
+    #             name='4b'; model=Model_4b;  
+    #         if ('model_4n'==model) or ('4n'==model):
+    #             name='4n'; model=Model_4n;  
+    # elif keys is None:
+    #         raise ValueError('Please specify the parameters name as keys.')
 # --------------------------------------------------------
 
     
@@ -267,7 +263,20 @@ def select_model(model,model_default={},model_boundary={},model_mask=Model_user_
 
 # DA raw estimation
 # --------------------------------------------------------
-def _da_raw(data,at_turn,seed,compute_da, ang_range):
+def _da_raw(data,at_turn: int,seed: int,compute_da: function,ang_range: list, interp: function=trapz):
+    """Function estimating the DA border from the raw data.
+
+    Args:
+        data (pandas dataframe):     Particles dataframe with columns 'nturns', 'round_angle' and 'amplitude'.
+        at_turn (int):               Turn number to look at.
+        seed (int):                  Seed number.
+        compute_da (function):       Function to compute the DA.
+        ang_range (list):            Open or close interval of the angle for the integration.
+        interp (function, optional): Interpolation function. Defaults to trapz.
+        
+    Returns:
+        new_da , new_border:         Dataframe with the DA estimation and the DA border.
+    """
     # Detect range to look at the DA border
     losses =data.nturns<at_turn
     min_loss=data.amplitude[losses].min()
@@ -377,10 +386,10 @@ def _da_raw(data,at_turn,seed,compute_da, ang_range):
     border_min = data.loc[id_min,['amplitude','angle','id']]
     border_max = data.loc[id_max,['amplitude','angle','id']]
     
-    new_da=pd.DataFrame({'DA lower':    [compute_da(border_min['angle'], border_min['amplitude'], ang_range)],
+    new_da=pd.DataFrame({'DA lower':    [compute_da(border_min['angle'], border_min['amplitude'], ang_range, interp)],
                          'DAmin lower': [min(border_min['amplitude'])],
                          'DAmax lower': [max(border_min['amplitude'])],
-                         'DA upper':    [compute_da(border_max['angle'], border_max['amplitude'], ang_range)],
+                         'DA upper':    [compute_da(border_max['angle'], border_max['amplitude'], ang_range, interp)],
                          'DAmin upper': [min(border_max['amplitude'])],
                          'DAmax upper': [max(border_max['amplitude'])],
                          'seed':        [seed],
@@ -411,6 +420,7 @@ def _da_raw(data,at_turn,seed,compute_da, ang_range):
 # DA smoothing procedure
 # --------------------------------------------------------
 # Not allowed on parallel process
+# TODO: review all the function
 def _da_smoothing(data,raw_border_min,raw_border_max,at_turn,removed=pd.DataFrame(columns=['id']),
                   DA_lim_min=None,DA_lim_max=None, active_warmup=True, ang_range=None):
     
