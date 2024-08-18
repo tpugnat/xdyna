@@ -1095,7 +1095,7 @@ class DA:
 #             part=track_per_seed(context,self.line.tracker,
             part=track_per_seed(context,self.line,
                                 x_norm, y_norm, px_norm, py_norm, zeta, delta, 
-                                self.nemitt_x, self.nemitt_y, self.meta.max_turns, with_progress)
+                                self.nemitt_x, self.nemitt_y, self.meta.max_turns, with_progress=with_progress)
             self._append_job_log('output', datetime.datetime.now().isoformat() + '  Done tracking job ' + str(job_id) + '.', logging=logging)
 
             # Store results
@@ -1157,7 +1157,7 @@ class DA:
                 self._append_job_log('output', datetime.datetime.now().isoformat() + '  Start tracking job ' + str(job_id) + '.', logging=logging)
                 part=track_per_seed(context,self.line[seed],
                                     x_norm, y_norm, px_norm, py_norm, zeta, delta, 
-                                    self.nemitt_x, self.nemitt_y, self.meta.max_turns)
+                                    self.nemitt_x, self.nemitt_y, self.meta.max_turns,with_progress=with_progress)
 
                 self._append_job_log('output', datetime.datetime.now().isoformat() + '  Done tracking job ' + str(job_id) + '.', logging=logging)
 
