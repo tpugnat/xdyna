@@ -434,7 +434,7 @@ def run_htcondor(da_study: DA):
     else:
         raise FileNotFoundError(f"File {file} not found")
 
-    raise NotImplementedError("Status not implemented yet")
+    # raise NotImplementedError("Status not implemented yet")
 
 
 def track(da_study: DA, config:dict):
@@ -442,8 +442,8 @@ def track(da_study: DA, config:dict):
 
 
 def status(da_study: DA):
-    # da_study.status()
     raise NotImplementedError("Status not implemented yet")
+    da_study.status()
 # =================================================================================================
 
 
@@ -453,36 +453,36 @@ def status(da_study: DA):
 
 
 # =================================================================================================
-def main() -> None:
-    config, operands = parse(sys.argv[1:])
+def main(argv) -> None:
+    config, operands = parse(argv)
     if not operands:
         raise SystemExit(USAGE)
-    print(f"config:")
-    pprint(config, indent=4)
-    print(f"operands:")
-    pprint(operands, indent=4)
+    # print(f"config:")
+    # pprint(config, indent=4)
+    # print(f"operands:")
+    # pprint(operands, indent=4)
 
-    # da_study = get_DA(config, operands)
-    # if 'Generate_line' in operands:
-    #     get_line(da_study, operands['Generate_line'])
+    da_study = get_DA(config, operands)
+    if 'Generate_line' in operands:
+        get_line(da_study, operands['Generate_line'])
 
-    # if  'Generate_particles' in operands:
-    #     generate_particles(da_study, operands['Generate_particles'])
+    if  'Generate_particles' in operands:
+        generate_particles(da_study, operands['Generate_particles'])
 
-    # if 'Rerun_particles' in operands:
-    #     da_study.resubmit_unfinished()
+    if 'Rerun_particles' in operands:
+        da_study.resubmit_unfinished()
 
-    # if 'Status' in operands:
-    #     status(da_study)
+    if 'Status' in operands:
+        status(da_study)
 
-    # if 'Generate_config_htcondor' in operands:
-    #     generate_config_htcondor(da_study)
+    if 'Generate_config_htcondor' in operands:
+        generate_config_htcondor(da_study)
 
-    # if 'Run_config_htcondor' in operands:
-    #     run_htcondor(da_study)  
+    if 'Run_config_htcondor' in operands:
+        run_htcondor(da_study)  
 
-    # if 'Track' in operands:
-    #     track(da_study, operands['Track'])
+    if 'Track' in operands:
+        track(da_study, operands['Track'])
 # =================================================================================================
 
 
@@ -490,4 +490,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
