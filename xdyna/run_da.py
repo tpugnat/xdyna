@@ -284,7 +284,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
             if arg is not None:
                 raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
-        if arg is not None and arg not in MAIN_OPERANDS:
+        if arguments and arg is not None and arg not in MAIN_OPERANDS:
             raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
     
 
