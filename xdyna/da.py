@@ -2886,10 +2886,11 @@ def get_border_max(DA,seed,t):
 # Function loading SixDesk/SixDB outputs into XDyna
 # --------------------------------------------------------
 def load_sixdesk_output(path, study, nemit=None, load_line: bool=False): # TODO: Add reference emitance, if emittance difference from file inform that if BB some results will be wrong
+    path = Path(path)
     ## SIXDESK
     ## -----------------------------------
     # Load meta
-    meta=pd.read_csv(path+'/'+study+".meta.csv",header=0); meta=meta.set_index('keyname')
+    meta=pd.read_csv(path / study+".meta.csv",header=0); meta=meta.set_index('keyname')
 
     # Load polar
     # tp=pd.read_csv(path+'/'+study+".polar.csv",header=0)
