@@ -4,9 +4,13 @@ from pathlib import Path
 from pprint  import pprint
 from typing  import Dict, List, Tuple
 
+print("PYTHONPATH:", sys.path)
+
+# import xtrack
+# import xpart
 from xdyna.da import DA
 # from .da_meta import _DAMetaData
-
+# DA = int
 
 
 USAGE = (f"Usage: {sys.argv[0]} "
@@ -368,6 +372,15 @@ def generate_particles(da_study: DA, config:dict):
 
 
 def generate_config_htcondor(da_study: DA):
+    path = da_study.meta.path
+    study = da_study.meta.name
+
+    # Clean the config file if it exists
+    file = Path(path / f"config_htcondor_track_{study}.ini")
+    if file.exists():
+        file.unlink()
+
+    # Count the number of jobs to run on htcondor
     import numpy as np
     list_npart = [200, 500, 1000, 2000, 5000]
     list_jobflavour = ["workday", "tomorrow", "tomorrow", "testmatch", "nextweek"]
@@ -376,49 +389,47 @@ def generate_config_htcondor(da_study: DA):
     # jobflavour = "tomorrow"
     njobs=-1
     if da_study.meta.nseeds != 0:
+        mask = ~da_study._surv.finished
         for npt, jbflvr in zip(list_npart, list_jobflavour):
             if njobs == -1 or njobs > 500:
                 npart = npt
                 jobflavour = jbflvr
-                njobs = sum([np.ceil(sum( (~DA._surv.finished) &  (DA._surv.seed==ss) ) / npart) for ss in range(1,da_study.meta.nseeds+1)])
+                njobs = int(sum([np.ceil(sum( mask & (da_study._surv.seed==ss) ) / npart) for ss in range(1,da_study.meta.nseeds+1)]))
     else:
         for npt, jbflvr in zip(list_npart, list_jobflavour):
             if njobs == -1 or njobs > 500:
                 npart = npt
                 jobflavour = jbflvr
-                njobs = np.ceil(sum( ~DA._surv.finished ) / npart)
+                njobs = int(np.ceil(sum( ~da_study._surv.finished ) / npart))
 
-    path = da_study.meta.path
-    study = da_study.meta.name
-    txt = ''
-    txt+= '[DEFAULT]\n'
-    txt+= 'executable="bash"\n'
-    # TODO: Add the path to the mask
-    txt+= 'mask="/afs/cern.ch/work/t/thpugnat/public/DA_study_with_xdyna/mask_track.sh"\n'
-    # TODO: Add the path to the working directory
-    txt+= f'working_directory={"/afs/cern.ch/work/t/thpugnat/private/xtrack_tests/DA/hcondor/local/"+study}\n'
-    txt+= '# "espresso", "microcentury", "longlunch", "workday", "tomorrow", "testmatch", "nextweek"\n'
-    txt+= f'jobflavour="{jobflavour}"\n'
-    txt+= 'run_local=False\n'
-    txt+= 'resume_jobs=False\n'
-    txt+= 'append_jobs=False\n'
-    txt+= 'dryrun=False\n'
-    txt+= 'num_processes=8\n'
+    if njobs != 0:
+        # Create the config file
+        txt = ''
+        txt+= '[DEFAULT]\n'
+        txt+= 'executable="bash"\n'
+        # TODO: Add the path to the mask
+        txt+= 'mask="/afs/cern.ch/work/t/thpugnat/public/DA_study_with_xdyna/mask_track.sh"\n'
+        # txt+=f'mask="{path / "hcondor/mask_track.sh"}"\n'
+        # TODO: Add the path to the working directory
+        txt+= f'working_directory="{path / "hcondor/"}"\n'
+        txt+= '# "espresso", "microcentury", "longlunch", "workday", "tomorrow", "testmatch", "nextweek"\n'
+        txt+= f'jobflavour="{jobflavour}"\n'
+        txt+= 'run_local=False\n'
+        txt+= 'resume_jobs=False\n'
+        txt+= 'append_jobs=False\n'
+        txt+= 'dryrun=False\n'
+        txt+= 'num_processes=8\n'
 
-    txt+= 'htc_arguments={"accounting_group":"group_u_BE.ABP.normal","MY.WantOS":"el9"}\n'
-    ljobs=str([ii for ii in range(njobs)])
-    txt+= "\n\nreplace_dict={ "
-    txt+= f"'ff':['{study}'], "
-    txt+= f"'npart': [{npart}], 'i': {ljobs}" + "}\n"
+        txt+= 'htc_arguments={"accounting_group":"group_u_BE.ABP.normal","MY.WantOS":"el9","batch_name":"' +str(study)+'"}'
+        ljobs=str([ii for ii in range(njobs)])
+        txt+= "\n\nreplace_dict={ "
+        txt+= f"'ff':['{study}'], "
+        txt+= f"'npart': [{npart}], 'i': {ljobs}" + "}\n"
 
-    file = Path(path / f"config_htcondor_track_{study}.ini")
-    if file.exists():
-        file.unlink()
+        with open(file,'w') as pf:
+            pf.write(txt)
 
-    with open(file,'w') as pf:
-        pf.write(txt)
-
-    print(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
+        print(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
 
     # raise NotImplementedError("Status not implemented yet")
 
@@ -432,7 +443,8 @@ def run_htcondor(da_study: DA):
         else:
             raise ImportError("Module pylhc_submitter not found")
     else:
-        raise FileNotFoundError(f"File {file} not found")
+        raise FileNotFoundError(f"File {file} not found! Be sure to generate the config file first using" +\
+                                " `-htc`,`--htcondor` or `--generate_config_htcondor`")
 
     # raise NotImplementedError("Status not implemented yet")
 
@@ -453,41 +465,42 @@ def status(da_study: DA):
 
 
 # =================================================================================================
-def main(argv) -> None:
+def run_da(argv) -> None:
     config, operands = parse(argv)
     if not operands:
         raise SystemExit(USAGE)
-    # print(f"config:")
-    # pprint(config, indent=4)
-    # print(f"operands:")
-    # pprint(operands, indent=4)
+    print(f"config:")
+    pprint(config, indent=4)
+    print(f"operands:")
+    pprint(operands, indent=4)
 
-    da_study = get_DA(config, operands)
-    if 'Generate_line' in operands:
-        get_line(da_study, operands['Generate_line'])
+    # import xdyna
+    # print(Path(xdyna.__file__).parent)
 
-    if  'Generate_particles' in operands:
-        generate_particles(da_study, operands['Generate_particles'])
+    # da_study = get_DA(config, operands)
+    # if 'Generate_line' in operands:
+    #     get_line(da_study, operands['Generate_line'])
 
-    if 'Rerun_particles' in operands:
-        da_study.resubmit_unfinished()
+    # if  'Generate_particles' in operands:
+    #     generate_particles(da_study, operands['Generate_particles'])
 
-    if 'Status' in operands:
-        status(da_study)
+    # if 'Rerun_particles' in operands:
+    #     da_study.resubmit_unfinished()
 
-    if 'Generate_config_htcondor' in operands:
-        generate_config_htcondor(da_study)
+    # if 'Status' in operands:
+    #     status(da_study)
 
-    if 'Run_config_htcondor' in operands:
-        run_htcondor(da_study)  
+    # if 'Generate_config_htcondor' in operands:
+    #     generate_config_htcondor(da_study)
 
-    if 'Track' in operands:
-        track(da_study, operands['Track'])
+    # if 'Run_config_htcondor' in operands:
+    #     run_htcondor(da_study)  
+
+    # if 'Track' in operands:
+    #     track(da_study, operands['Track'])
 # =================================================================================================
 
 
 
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
+if __name__ == "__main__" or __name__ == "__xdyna.run_da__":
+    run_da(sys.argv[1:])
