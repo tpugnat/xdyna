@@ -1035,7 +1035,8 @@ class DA:
     # =================================================================
 
     # Allowed on parallel process
-    def track_job(self, *,  npart: Union[int,None]=None, logging: bool=True, force_single_seed_per_job: Union[bool,None]=None, with_progress: bool=False):
+    def track_job(self, *,  npart: Union[int,None]=None, logging: bool=True, force_single_seed_per_job: Union[bool,None]=None, 
+                  with_progress: bool=False, co_search_at: Union[str,None]=None):
         """Track the particles in the lines and automatically manage the seeds.
 
         Args:
@@ -1043,12 +1044,21 @@ class DA:
             logging (bool, optional):                          Add logging in the submission file. Defaults to True.
             force_single_seed_per_job (bool | None, optional): If True, force to track only one seed per job. Defaults to None.
             with_progress (bool, optional):                    Show progress while tracking. Defaults to False.
+            co_search_at (str | None, optional):               Change the starting point at which the CO is computed, example: `ip7`. Defaults to None.
         """
         if self.line is None:
             if self.meta.line_file is not None and self.meta.line_file != -1 and self.meta.line_file.exists():
                 self.load_line_from_file()
             else:
                 raise Exception("No line loaded nor found on file!")
+
+        # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
+        if co_search_at is not None:
+            if self.meta.nseeds == 0:
+                self.line.twiss_default['co_search_at'] = co_search_at
+            else:
+                for seed in self.line:
+                     self.line[seed].twiss_default['co_search_at'] = co_search_at
 
         # Create a job: get job ID and start logging
         part_ids, seeds, flag = self._create_job(npart, logging, force_single_seed_per_job)
