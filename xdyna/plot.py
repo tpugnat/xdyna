@@ -6,7 +6,7 @@ from typing import Union
 
 def plot_particles(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union[int,None]=None, status: str="All", type_plot: str="polar",
                    #closses="red", csurviving="blue", 
-                   size_scaling: str="log", **kwargs):
+                   size_scaling: str="log", hshift: float=0, **kwargs):
     """Scatter plot of the lost and surviving particles.
 
     Args:
@@ -17,6 +17,7 @@ def plot_particles(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union
         status (str, optional):                     Status of the particles at this turn: "All", "Surv", "Loss". Defaults to "All".
         type_plot (str, optional):                  x-y for cartesian, ang-amp for polar. Defaults to "polar".
         size_scaling (str, optional):               Type of losses dot scaling: "linear", "log", None. Defaults to "log".
+        hshift (float, optional):                   Shift the horizontal axis for superposed plot. Defaults to 0.
         **kwargs:                                   Additional keyword arguments for the plot.
 
     Returns:
@@ -49,7 +50,7 @@ def plot_particles(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union
         if "angle" not in data.columns or "amplitude" not in data.columns:
             data['angle']     = np.arctan2(data['y'],data['x'])*180/np.pi
             data['amplitude'] = np.sqrt(data['x']**2+data['y']**2)
-        x = data.angle
+        x = data.angle+hshift
         y = data.amplitude
         ax.set_xlabel(r'Angle [$^{\circ}$]')
         ax.set_ylabel(r'Amplitude [$\sigma$]')
@@ -57,7 +58,7 @@ def plot_particles(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union
         if "x" not in data.columns or "y" not in data.columns:
             data['x'] = data['amplitude']*np.cos(data['angle']*np.pi/180)
             data['y'] = data['amplitude']*np.sin(data['angle']*np.pi/180)
-        x = data.x
+        x = data.x+hshift
         y = data.y
         ax.set_xlabel(r'x [$\sigma$]')
         ax.set_ylabel(r'y [$\sigma$]')
