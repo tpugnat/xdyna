@@ -89,6 +89,7 @@ class DA:
         self._line = None
         self.read_surv()
         self.read_da()
+        self.read_border()
         self.read_da_evol()
 
         # Ignore leftover arguments
