@@ -314,7 +314,7 @@ class DA:
         if not file.exists():
             raise ValueError(f"Line file {file.as_posix()} not found!")
 
-        with ProtectFile(file, 'r', max_lock_time=600) as pf:
+        with ProtectFile(file, 'r', max_lock_time=900) as pf:
             line = json.load(pf)
 
         # Fix string keys in JSON: seeds are int
@@ -1498,18 +1498,18 @@ class DA:
         if at_turn > self.max_turns:
             raise ValueError(f'at_turn cannot be higher than the max number of turns for the simulation, here max_turn={DA.max_turns}')
 
-        if not force:
-            self.read_da()
-            self.read_border()
-        else:
+        if force:
             self._da = None
             self._border = None
+        elif self._da is None or self._border is None:
+            self.read_da()
+            self.read_border()
         if self._da is None:
             self._da=pd.DataFrame(columns=['t','seed', 'DA lower','DAmin lower','DAmax lower',
                                            'DA upper','DAmin upper','DAmax upper'])
 
             self._border=pd.DataFrame(columns=['t','seed', 'id lower','id upper'])
-        if at_turn in self._da['t']:
+        if at_turn in np.unique(self._da['t']):
             return
 
         # Select data per seed if needed
@@ -1774,7 +1774,10 @@ class DA:
         if force:
             self._da = None
             self._border = None
-        if self._da is None or to_turn not in self._da['t']:
+        elif self._da is None or self._border is None:
+            self.read_da()
+            self.read_border()
+        if self._da is None or to_turn not in np.unique(self._da['t']):
             self.calculate_da(at_turn=to_turn, smoothing=True, 
                               interp_order=interp_order, interp_method=interp_method, force=force, save=False) 
 
