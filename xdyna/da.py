@@ -28,7 +28,7 @@ from .geometry import _bleed, distance_to_polygon_2D
 from typing import Union
 
 
-_db_access_wait_time = 0.02
+_db_access_wait_time = 5 # 0.02 # slow down a lot the waiting time for the access to the AFS database
 
 # TODO: Function to generate DA object from meta file
 #       def generate_from_file(filename):
@@ -315,7 +315,7 @@ class DA:
         if not file.exists():
             raise ValueError(f"Line file {file.as_posix()} not found!")
 
-        with ProtectFile(file, 'r', max_lock_time=900) as pf:
+        with ProtectFile(file, 'r', wait=_db_access_wait_time, max_lock_time=900) as pf:
             line = json.load(pf)
 
         # Fix string keys in JSON: seeds are int
