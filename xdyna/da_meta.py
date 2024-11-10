@@ -475,7 +475,7 @@ class _DAMetaData:
             file_not_saved=True
             #while file_not_saved:
             
-            with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+            with ProtectFile(self.submissions_file, 'r+', wait=1) as pf:
                 try:
                     submissions_file = json.load(pf)
                 except json.decoder.JSONDecodeError:
@@ -528,7 +528,7 @@ class _DAMetaData:
     def update_submissions(self, submission_id, val):
         if self._use_files and not self._read_only:
             try:
-                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                with ProtectFile(self.submissions_file, 'r+', wait=1) as pf:
                     submissions_file = json.load(pf)
                     #submissions_file['submissions'].update({str(submission_id): val})
                     submissions_file.update({submission_id: val})
@@ -540,7 +540,7 @@ class _DAMetaData:
                 # using backups file from submissions_dir
                 submissions_file = self.rebuild_submission_from_backup()
                 submissions_file.update({submission_id: val})
-                with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                with ProtectFile(self.submissions_file, 'r+', wait=1) as pf:
                     pf.truncate(0)  # Delete file contents (to avoid appending)
                     pf.seek(0)      # Move file pointer to start of file
                     json.dump(submissions_file, pf, indent=2, sort_keys=False)
@@ -678,23 +678,23 @@ class _DAMetaData:
             val = {}
             if self.submissions_file.exists():
                 try:
-                    with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    with ProtectFile(self.submissions_file, 'r+', wait=1) as pf:
                         val = json.load(pf)
                 except json.decoder.JSONDecodeError:
                     # This file is expected to be easily corrupted. If this happen, then it need to be rebuild
                     # using backups file from submissions_dir
                     val = self.rebuild_submission_from_backup()
-                    with ProtectFile(self.submissions_file, 'r+', wait=0.005) as pf:
+                    with ProtectFile(self.submissions_file, 'r+', wait=1) as pf:
                         pf.truncate(0)  # Delete file contents (to avoid appending)
                         pf.seek(0)      # Move file pointer to start of file
                         json.dump(val, pf, indent=2, sort_keys=False)
                     #setattr(self, '_submissions', val['submissions'] )
             elif self.submission_backup('0').exists():
                 val = self.rebuild_submission_from_backup()
-                with ProtectFile(self.submissions_file, 'x+', wait=0.005) as pf:
+                with ProtectFile(self.submissions_file, 'x+', wait=1) as pf:
                     json.dump(val, pf, indent=2, sort_keys=False)
             else:
-                with ProtectFile(self.submissions_file, 'x+', wait=0.005) as pf:
+                with ProtectFile(self.submissions_file, 'x+', wait=1) as pf:
                     json.dump(val, pf, indent=2, sort_keys=False)
             setattr(self, '_submissions', val )
 
@@ -702,10 +702,10 @@ class _DAMetaData:
     # This will overwrite the value associated to submission_id in self._submissions with val.
     def _read_submissions_backup(self,submission_id):
         try:
-            with ProtectFile(self.submission_backup(submission_id) , 'r+', wait=0.005) as pf_backup:
+            with ProtectFile(self.submission_backup(submission_id) , 'r+', wait=1) as pf_backup:
                 val = json.load(pf_backup)
         except json.decoder.JSONDecodeError:
-            with ProtectFile(self.submission_backup(submission_id) , 'r+', wait=0.005) as pf_backup:
+            with ProtectFile(self.submission_backup(submission_id) , 'r+', wait=1) as pf_backup:
                 val = {submission_id:{'warnings':['Backup corrupted and reset!']}}
                 pf_backup.truncate(0)  # Delete file contents (to avoid appending)
                 pf_backup.seek(0)      # Move file pointer to start of file
