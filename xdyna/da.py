@@ -315,7 +315,7 @@ class DA:
         if not file.exists():
             raise ValueError(f"Line file {file.as_posix()} not found!")
 
-        with ProtectFile(file, 'r', wait=_db_access_wait_time, max_lock_time=900) as pf:
+        with ProtectFile(file, 'r', wait=_db_access_wait_time, max_lock_time=1800) as pf:
             line = json.load(pf)
 
         # Fix string keys in JSON: seeds are int
