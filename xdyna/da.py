@@ -23,12 +23,12 @@ import xpart as xp
 from .postprocess_tools import trapz, simpson, alter_simpson, compute_da_1D, compute_da_2D, compute_da_4D, fit_DA
 from .postprocess_tools import _da_raw, _da_smoothing, select_model
 from xaux import ProtectFile
-from .da_meta import _DAMetaData
+from .da_meta import _DAMetaData, _db_access_wait_time, _db_max_lock_time
 from .geometry import _bleed, distance_to_polygon_2D
 from typing import Union
 
 
-_db_access_wait_time = 5 # 0.02 # slow down a lot the waiting time for the access to the AFS database
+#_db_access_wait_time = 60 # 0.02 # slow down a lot the waiting time for the access to the AFS database
 
 # TODO: Function to generate DA object from meta file
 #       def generate_from_file(filename):
@@ -64,7 +64,7 @@ class DA:
             self.meta.energy       = kwargs.pop('energy',       _DAMetaData._defaults['energy'])
             self.meta.db_extension = kwargs.pop('db_extension', _DAMetaData._defaults['db_extension'])
             nemitt_x               = kwargs.pop('nemitt_x',     None)
-            nemitt_y               = kwargs.pop('nemitt_y',      None)
+            nemitt_y               = kwargs.pop('nemitt_y',     None)
             normalised_emittance   = kwargs.pop('normalised_emittance', None)
             if normalised_emittance is not None:
                 if nemitt_x is not None or nemitt_y is not None:
@@ -229,7 +229,7 @@ class DA:
             corr_x = np.sqrt( oldemittance[0] / self.nemitt_x )
             corr_y = np.sqrt( oldemittance[1] / self.nemitt_y )
             if self.surv_exists():
-                with ProtectFile(self.meta.surv_file, 'r+b') as pf:
+                with ProtectFile(self.meta.surv_file, 'r+b', wait=_db_access_wait_time) as pf:
                     self.read_surv(pf)
                     self._surv['x_norm_in']  *= corr_x
                     self._surv['px_norm_in'] *= corr_x
@@ -315,7 +315,7 @@ class DA:
         if not file.exists():
             raise ValueError(f"Line file {file.as_posix()} not found!")
 
-        with ProtectFile(file, 'r', wait=_db_access_wait_time, max_lock_time=1800) as pf:
+        with ProtectFile(file, 'r', wait=_db_access_wait_time, max_lock_time=_db_max_lock_time) as pf:
             line = json.load(pf)
 
         # Fix string keys in JSON: seeds are int
@@ -907,7 +907,7 @@ class DA:
                     if self.line_file.exists():
                         print(f"Warning: line_file {self.line_file} exists and is being overwritten.")
                     data = {str(seed): 'Running MAD-X' for seed in seeds}
-                    with ProtectFile(self.line_file, 'w') as pf:
+                    with ProtectFile(self.line_file, 'w', wait=_db_access_wait_time) as pf:
                         json.dump(data, pf, cls=xo.JEncoder, indent=True)
             else:
                 if seeds is not None:
@@ -925,13 +925,13 @@ class DA:
                             if seeds is None:
                                 seeds = [ 1 ]
                             data = {str(seed): 'Running MAD-X' for seed in seeds}
-                            with ProtectFile(self.line_file, 'x') as fid:
+                            with ProtectFile(self.line_file, 'x', wait=_db_access_wait_time) as fid:
                                 json.dump(data, fid, cls=xo.JEncoder, indent=True)
                             created = True
                         except FileExistsError:
                             pass
                     if not created:
-                        with ProtectFile(self.line_file, 'r+') as pf:
+                        with ProtectFile(self.line_file, 'r+', wait=_db_access_wait_time) as pf:
                             data = json.load(pf)
                             if seeds is None:
                                 n_existing = len(data.keys())
@@ -968,22 +968,22 @@ class DA:
                 else:
                     madin = Path(tmpdir) / self.madx_file.name
                     madout = self.madx_file.parent / (self.madx_file.stem + '.' + str(seed) + '.madx.out')
-                    with ProtectFile(self.madx_file, 'r',
-                                     max_lock_time=600) as fin:
+                    with ProtectFile(self.madx_file, 'r', wait=_db_access_wait_time,
+                                     max_lock_time=_db_max_lock_time) as fin:
                         data = fin.read()
                         data = data.replace('%SEEDRAN', str(seed))
                         for kk,vv in other_madx_flag.items():
                             data = data.replace(kk, str(vv))
-                        with ProtectFile(madin, 'w') as fout:
+                        with ProtectFile(madin, 'w', wait=_db_access_wait_time) as fout:
                             fout.write(data)
-                with ProtectFile(madout, 'w') as pf:
+                with ProtectFile(madout, 'w', wait=_db_access_wait_time) as pf:
                     print(f"Running MAD-X in {tmpdir}")
                     mad = Madx(stdout=pf)
                     mad.chdir(tmpdir)
                     mad.call(madin.as_posix())
                     # TODO: check if MAD-X failed: if so, write 'MAD-X failed' into line_file
                 # TODO: check if madx raised a message stating a variable was not defined before being used
-                with ProtectFile(madout, 'r') as pf:
+                with ProtectFile(madout, 'r', wait=_db_access_wait_time) as pf:
                     lls = pf.readlines()
                     error_madx = ''
                     for l in lls:
@@ -1007,14 +1007,14 @@ class DA:
             if seed is None:
                 self._line = line
                 if store_line:
-                    with ProtectFile(self.line_file, 'w') as pf:
+                    with ProtectFile(self.line_file, 'w', wait=_db_access_wait_time) as pf:
                         json.dump(self.line.to_dict(), pf, cls=xo.JEncoder, indent=True)
             else:
                 if self._line is None:
                     self._line = {}
                 self._line[seed] = line
                 if store_line:
-                    with ProtectFile(self.line_file, 'r+') as pf:
+                    with ProtectFile(self.line_file, 'r+', wait=_db_access_wait_time) as pf:
                         data = json.load(pf)
                         data[str(seed)] = line.to_dict()
                         pf.truncate(0)  # Delete file contents (to avoid appending)
@@ -2547,7 +2547,7 @@ class DA:
             if self.meta.db_extension=='parquet':
                 if pf is None:
                     with ProtectFile(self.meta.surv_file, 'rb', wait=_db_access_wait_time,
-                                     max_lock_time=1800) as pf:
+                                     max_lock_time=_db_max_lock_time) as pf:
                         self._surv = pd.read_parquet(pf, engine="pyarrow")
                 else:
                     self._surv = pd.read_parquet(pf, engine="pyarrow")
@@ -2587,7 +2587,7 @@ class DA:
             if self.meta.db_extension=='parquet':
                 if pf is None:
                     with ProtectFile(self.meta.da_file, 'rb', wait=_db_access_wait_time,
-                                     max_lock_time=1800) as pf:
+                                     max_lock_time=_db_max_lock_time) as pf:
                         self._da = pd.read_parquet(pf, engine="pyarrow")
                 else:
                     self._da = pd.read_parquet(pf, engine="pyarrow")
@@ -2671,7 +2671,7 @@ class DA:
             if self.meta.db_extension=='parquet':
                 if pf is None:
                     with ProtectFile(self.meta.da_evol_file, 'rb', wait=_db_access_wait_time,
-                                     max_lock_time=1800) as pf:
+                                     max_lock_time=_db_max_lock_time) as pf:
                         self._da_evol = pd.read_parquet(pf, engine="pyarrow")
                 else:
                     self._da_evol = pd.read_parquet(pf, engine="pyarrow")
@@ -2711,7 +2711,7 @@ class DA:
             if self.meta.db_extension=='parquet':
                 if pf is None:
                     with ProtectFile(self.meta.da_model_file, 'rb', wait=_db_access_wait_time,
-                                     max_lock_time=1800) as pf:
+                                     max_lock_time=_db_max_lock_time) as pf:
                         self._da_model = pd.read_parquet(pf, engine="pyarrow")
                 else:
                     self._da_model = pd.read_parquet(pf, engine="pyarrow")
@@ -2958,7 +2958,7 @@ def load_sixdesk_output(path, study, nemit=None, load_line: bool=False): # TODO:
                 for key, value in label.items():
                     print(key, value)
                     data=data.replace(key, str(value))
-                with open(Path(path,study+".mask.unmasked"), 'w') as fout:
+                with ProtectFile(Path(path,study+".mask.unmasked"), 'w', wait=_db_access_wait_time) as fout:
                     fout.write(data)
             sixdb_da.madx_file = Path(path,study+".mask.unmasked")
 
