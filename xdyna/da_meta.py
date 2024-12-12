@@ -20,7 +20,7 @@ from xaux import ProtectFile
 #    - @property setter and getter
 
 # TODO: missing particle selection ...   =>  ?
-_db_access_wait_time = 60 # 0.02 # slow down a lot the waiting time for the access to the AFS database
+_db_access_wait_time = 600 # 0.02 # slow down a lot the waiting time for the access to the AFS database
 _db_max_lock_time = 900 # 0.02 # slow down a lot the waiting time for the access to the AFS database
 
 def regenerate_meta_file(name, **kwargs):
