@@ -240,21 +240,26 @@ class _DAMetaData:
 
     @property
     def madx_file(self):
-        return self._madx_file
+#         return self._madx_file
+        return self._madx_file if self._madx_file is None else Path(self._madx_file).resolve()
 
     @madx_file.setter
     def madx_file(self, madx_file):
-        madx_file = Path(madx_file).resolve()
+#         madx_file = Path(madx_file).resolve()
         self._set_property('madx_file', madx_file)
 
     @property
     def line_file(self):
-        return self._line_file
+#         return self._line_file
+        if self._line_file == -1 or self._line_file is None:
+            return self._line_file
+        else:
+            return Path(self._line_file).resolve()
 
     @line_file.setter
     def line_file(self, line_file):
-        if line_file != -1:
-            line_file = Path(line_file).resolve()
+#         if line_file != -1:
+#             line_file = Path(line_file).resolve()
         self._set_property('line_file', line_file)
 
     @property
