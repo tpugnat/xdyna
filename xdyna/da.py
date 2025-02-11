@@ -1216,6 +1216,179 @@ class DA:
 
 
     # NOT allowed on parallel process!
+    def retrive_jobs(self, platform: str='htcondor'):
+        # Load the Job_Manager
+        from xaux.jobmanager import JobManager
+        jm = None
+        if platform == 'htcondor':
+            if self.meta.da_htcondor_meta.exist():
+                jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
+            else:
+                raise ValueError("No HTCondor meta file found.")
+        elif platform == 'boinc':
+            raise NotImplementedError("BOINC not yet implemented.")
+        else:
+            raise ValueError(f"Platform '{platform}' not supported.")
+        if jm is not None:
+            results = jm.retrieve(platform=platform)
+            # Load surv if not already loaded
+            if self._surv is None:
+                self.read_surv()
+            if self._surv is None:
+                raise ValueError("No survival data found!")
+            # Update surv with results
+            part = xp.Particle()
+            for kk,vv in results.items():
+                # Get seed and context
+                context = self.line[jm._job_list[kk]['parameter']['seed']].tracker._buffer.context
+                # Load tracking results
+                with ProtectFile(vv['output_file']['0'], 'rb', wait=_db_access_wait_time,
+                                max_lock_time=_db_max_lock_time) as pf:
+                    part = xp.Particles.from_pandas(pd.read_parquet(pf, engine="pyarrow"), _context=self._context)
+                # Store tracking results
+                part_id   = context.nparray_from_context_array(part.particle_id)
+                sort      = np.argsort(part_id)
+                part_id   = part_id[sort]
+                x_out     = context.nparray_from_context_array(part.x)[sort]
+                y_out     = context.nparray_from_context_array(part.y)[sort]
+                survturns = context.nparray_from_context_array(part.at_turn)[sort]
+                px_out    = context.nparray_from_context_array(part.px)[sort]
+                py_out    = context.nparray_from_context_array(part.py)[sort]
+                zeta_out  = context.nparray_from_context_array(part.zeta)[sort]
+                delta_out = context.nparray_from_context_array(part.delta)[sort]
+                s_out     = context.nparray_from_context_array(part.s)[sort]
+                state     = context.nparray_from_context_array(part.state)[sort]
+
+                self._surv.loc[part_id, 'finished'] = True
+                self._surv.loc[part_id, 'x_out'] = x_out
+                self._surv.loc[part_id, 'y_out'] = y_out
+                self._surv.loc[part_id, 'nturns'] = survturns.astype(np.int64)
+                self._surv.loc[part_id, 'px_out'] = px_out
+                self._surv.loc[part_id, 'py_out'] = py_out
+                self._surv.loc[part_id, 'zeta_out'] = zeta_out
+                self._surv.loc[part_id, 'delta_out'] = delta_out
+                self._surv.loc[part_id, 's_out'] = s_out
+                self._surv.loc[part_id, 'state'] = state
+            self.write_surv()
+    
+    # NOT allowed on parallel process!
+    def resubmit_jobs(self, platform:str='htcondor', number_part_per_jobs: int|None=None, number_jobs_max: int|None=None, **kwarg):
+        # Retrive results if JobManager already exist
+        self.retrive_jobs(platform)
+        self.resubmit_unfinished()
+        if self.meta.da_htcondor_meta.exist():
+            # Load JobManager meta file
+            jm = JobManager(self.meta.da_htcondor_meta)
+            jm.job_class = DAJob
+            jm.save_metadata()
+        else:
+            # Set JobManager environment path
+            input_directory  = self.meta.path
+            output_directory = Path(kwarg.pop('output_directory', self.meta.path / 'output'))
+            if not output_directory.exists():
+                output_directory.mkdir(parent=True)
+            # Generate JobManager and import DA jobs routine
+            from xaux.jobmanager import JobManager, DAJob
+            jm = JobManager(self.meta.name, self.meta.da_htcondor_dir, job_class=DAJob,
+                            input_directory=input_directory, output_directory=output_directory)
+        # Define the function for particle generation:
+        def set_particles_per_seed(context, line, x_norm, y_norm, px_norm, py_norm, zeta, delta, nemitt_x, nemitt_y, particle_id):
+            # # openmp context and radiation do not play nicely together, so temp. switch to single thread context
+            # if line._context.openmp_enabled:
+            #     line.discard_tracker()
+            #     line.build_tracker(_context=xo.ContextCpu())
+            # Create initial particles
+            part = line.build_particles(
+                                      x_norm=x_norm, y_norm=y_norm, px_norm=px_norm, py_norm=py_norm, zeta=zeta, delta=delta,
+                                      nemitt_x=nemitt_x, nemitt_y=nemitt_y, particle_id=particle_id
+                                     )
+            return part
+        # Prepare particles submission
+        if number_part_per_jobs is None and number_jobs_max is None:
+            raise ValueError("Need to specify only one of 'number_part_per_jobs' or 'number_jobs_max'.")
+        if number_part_per_jobs is not None and number_jobs_max is not None:
+            raise ValueError("Cannot specify both 'number_part_per_jobs' and 'number_jobs_max'.")
+        if number_part_per_jobs is None:
+            number_part_per_jobs = int(np.ceil(len(self._surv[self._surv.submitted]) / number_jobs_max))
+        if number_jobs_max is None:
+            number_jobs_max = int(np.ceil(len(self._surv[self._surv.submitted]) / number_part_per_jobs))
+        select_particles = {}
+        if self.meta.nseeds != 0:
+            for seed in range(1, self.meta.nseeds+1):
+                mask = (self._surv.submitted == False) & (self._surv.seed == seed)
+                if mask.sum() == 0:
+                    continue
+                all_part_ids_seed = self._surv[mask].index.to_numpy()
+                for ii in range(0, np.ceil(len(all_part_ids_seed) / number_jobs_max)):
+                    part_ids = all_part_ids_seed[ii*number_jobs_max:(ii+1)*number_jobs_max]
+                    if len(part_ids) != 0:
+                        # Select initial particles
+                        context = self.line[seed].tracker._buffer.context
+                        x_norm  = self._surv.loc[part_ids, 'x_norm_in'].to_numpy()
+                        y_norm  = self._surv.loc[part_ids, 'y_norm_in'].to_numpy()
+                        px_norm = self._surv.loc[part_ids, 'px_norm_in'].to_numpy()
+                        py_norm = self._surv.loc[part_ids, 'py_norm_in'].to_numpy()
+                        zeta    = self._surv.loc[part_ids, 'zeta_in'].to_numpy()
+                        delta   = self._surv.loc[part_ids, 'delta_in'].to_numpy()
+                        # Generate particles
+                        part = set_particles_per_seed(context, self.line[seed],
+                                                    x_norm, y_norm, px_norm, py_norm, zeta, delta,
+                                                    self.nemitt_x, self.nemitt_y, part_ids)
+                        select_particles[f'seed{seed}-{ii}'] = [seed,part]
+            job_description = {}
+            for kk,vv in select_particles.items():
+                job_description[kk] = {'inputfiles':{'line':self.meta.line_file},
+                                       'particles':vv[1],
+                                       'parameter':{'num_turns':self.meta.max_turns, 'seed':vv[0]},
+                                       'outputfiles':{f'output_file':f'final_particles.parquet'} }
+            jm.add(**job_description)
+        else:
+            mask = (self._surv.submitted == False)
+            if mask.sum() == 0:
+                return
+            all_part_ids_seed = self._surv[mask].index.to_numpy()
+            for ii in range(0, np.ceil(len(all_part_ids_seed) / number_jobs_max)):
+                part_ids = all_part_ids_seed[ii*number_jobs_max:(ii+1)*number_jobs_max]
+                if len(part_ids) != 0:
+                    # Select initial particles
+                    context = self.line.tracker._buffer.context
+                    x_norm  = self._surv.loc[part_ids, 'x_norm_in'].to_numpy()
+                    y_norm  = self._surv.loc[part_ids, 'y_norm_in'].to_numpy()
+                    px_norm = self._surv.loc[part_ids, 'px_norm_in'].to_numpy()
+                    py_norm = self._surv.loc[part_ids, 'py_norm_in'].to_numpy()
+                    zeta    = self._surv.loc[part_ids, 'zeta_in'].to_numpy()
+                    delta   = self._surv.loc[part_ids, 'delta_in'].to_numpy()
+                    # Generate particles
+                    part = set_particles_per_seed(context, self.line,
+                                                    x_norm, y_norm, px_norm, py_norm, zeta, delta,
+                                                    self.nemitt_x, self.nemitt_y, part_ids)
+                    select_particles[f'{ii}'] = part
+            job_description = {}
+            for kk,vv in select_particles.items():
+                job_description[kk] = {'inputfiles':{'line':self.meta.line_file},
+                                       'particles':vv[1],
+                                       'parameter':{'num_turns':self.meta.max_turns},
+                                       'outputfiles':{f'output_file':f'final_particles.parquet'} }
+            jm.add(**job_description)
+        jm.submit(platform=platform, **kwarg)
+
+    # NOT allowed on parallel process!
+    def clean_jobs(self, platform:str='htcondor', **kwarg):
+        # Load the Job_Manager
+        from xaux.jobmanager import JobManager
+        jm = None
+        if platform == 'htcondor':
+            if self.meta.da_htcondor_meta.exist():
+                jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
+            else:
+                raise ValueError("No HTCondor meta file found.")
+        elif platform == 'boinc':
+            raise NotImplementedError("BOINC not yet implemented.")
+        else:
+            raise ValueError(f"Platform '{platform}' not supported.")
+        jm.clean(platform=platform, **kwarg)
+
+    # NOT allowed on parallel process!
     def resubmit_unfinished(self):
         if self.surv_exists():
             with ProtectFile(self.meta.surv_file, 'r+b', wait=_db_access_wait_time) as pf:

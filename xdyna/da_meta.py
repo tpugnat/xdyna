@@ -283,6 +283,14 @@ class _DAMetaData:
         return Path(self.path, self.name + '.model.' + self.db_extension).resolve() if self._use_files else None
 
     @property
+    def da_htcondor_dir(self):
+        return Path(self.path, 'htcondor').resolve() if self._use_files else None
+
+    @property
+    def da_htcondor_meta(self):
+        return Path(self.path, 'htcondor', self.name  + '.meta.json').resolve() if self._use_files else None
+
+    @property
     def db_extension(self):
         return self._db_extension if self._use_files else None
 
