@@ -51,7 +51,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
         'default_path': Path('./'),
         'use_files': False,
         'read_only': False,
-        'normalised_emittance': None,
+        # 'normalised_emittance': None,
     }
     operands: Dict = {}
 
