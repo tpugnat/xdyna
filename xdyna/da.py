@@ -25,7 +25,6 @@ from .postprocess_tools import _da_raw, _da_smoothing, select_model
 from xaux import ProtectFile
 from .da_meta import _DAMetaData, _db_access_wait_time, _db_max_lock_time
 from .geometry import _bleed, distance_to_polygon_2D
-from typing import Union
 
 
 #_db_access_wait_time = 60 # 0.02 # slow down a lot the waiting time for the access to the AFS database
@@ -392,11 +391,11 @@ class DA:
 
 
     def set_coordinates(self, *,
-                        x: Union[float,list,None]=None, px: Union[float,list,None]=None, 
-                        y: Union[float,list,None]=None, py: Union[float,list,None]=None, 
-                        zeta: Union[float,list,None]=None, delta: Union[float,list,None]=None,
-                        normalised_emittance: Union[float,list,None]=None, nseeds: Union[int,None]=None, 
-                        pairs_shift: float=0, pairs_shift_var: Union[str,None]=None):
+                        x: float|list|None=None, px: float|list|None=None, 
+                        y: float|list|None=None, py: float|list|None=None, 
+                        zeta: float|list|None=None, delta: float|list|None=None,
+                        normalised_emittance: float|list|None=None, nseeds: int|None=None, 
+                        pairs_shift: float=0, pairs_shift_var: str|None=None):
         """Let user provide initial coordinates for each plane. Those data are saved in _surv.
 
         Args:
@@ -459,11 +458,11 @@ class DA:
 
 
     # Not allowed on parallel process
-    def generate_initial_grid(self, *, x_min: float, x_max: float, x_step: Union[float,None]=None, x_num: Union[int,None]=None,
-                                y_min: float, y_max: float, y_step: Union[float,None]=None, y_num: Union[int,None]=None,
-                                px_norm: Union[list,float]=0, py_norm: Union[list,float]=0, zeta: Union[list,float]=0, 
-                                delta: Union[list,float]=0.00027, normalised_emittance: Union[list,float,None]=None, nseeds: Union[int,None]=None, 
-                                pairs_shift: float=0, pairs_shift_var: Union[str,None]=None):
+    def generate_initial_grid(self, *, x_min: float, x_max: float, x_step: float|None=None, x_num: int|None=None,
+                                y_min: float, y_max: float, y_step: float|None=None, y_num: int|None=None,
+                                px_norm: list|float=0, py_norm: list|float=0, zeta: list|float=0, 
+                                delta: list|float=0.00027, normalised_emittance: list|float|None=None, nseeds: int|None=None, 
+                                pairs_shift: float=0, pairs_shift_var: str|None=None):
         """Generate the initial conditions in a 2D X-Y grid.
 
         Args:
@@ -547,11 +546,11 @@ class DA:
 
 
     # Not allowed on parallel process
-    def generate_initial_radial(self, *, angles: int, r_min: float, r_max: float, r_step: Union[float,None]=None, r_num: Union[int,None]=None, 
-                                ang_min: float=0, ang_max: float=90, px_norm: Union[list,float]=0, py_norm: Union[list,float]=0,
-                                zeta: Union[list,float]=0, delta: Union[list,float]=0.00027, 
-                                normalised_emittance: Union[list,float,None]=None, nseeds: Union[int,None]=None, 
-                                pairs_shift: float=0, pairs_shift_var: Union[str,None]=None, open_border: bool=True):
+    def generate_initial_radial(self, *, angles: int, r_min: float, r_max: float, r_step: float|None=None, r_num: int|None=None, 
+                                ang_min: float=0, ang_max: float=90, px_norm: list|float=0, py_norm: list|float=0,
+                                zeta: list|float=0, delta: list|float=0.00027, 
+                                normalised_emittance: list|float|None=None, nseeds: int|None=None, 
+                                pairs_shift: float=0, pairs_shift_var: str|None=None, open_border: bool=True):
         """Generate the initial conditions in a 2D polar grid.
 
         Args:
@@ -632,10 +631,10 @@ class DA:
 
 
     # Not allowed on parallel process
-    def generate_random_initial(self, *, num_part: int=1000, r_max: float=25, px_norm: Union[list,float]=0, py_norm: Union[list,float]=0, 
-                                zeta: Union[list,float]=0, delta: Union[list,float]=0.00027, ang_min: float=0, ang_max: float=90, 
-                                normalised_emittance: Union[list,float, None]=None, nseeds: Union[int,None]=None, 
-                                pairs_shift: float=0, pairs_shift_var: Union[str,None]=None):
+    def generate_random_initial(self, *, num_part: int=1000, r_max: float=25, px_norm: list|float=0, py_norm: list|float=0, 
+                                zeta: list|float=0, delta: list|float=0.00027, ang_min: float=0, ang_max: float=90, 
+                                normalised_emittance: list|float|None=None, nseeds: int|None=None, 
+                                pairs_shift: float=0, pairs_shift_var: str|None=None):
         """Generate the initial conditions in a 2D random grid.
 
         Args:
@@ -861,7 +860,7 @@ class DA:
     # TODO: can we get particle mass from mask??? Particle type??
     # Allowed on parallel process
     def build_line_from_madx(self, sequence:str, *, file=None, apertures: bool=False, errors: bool=True, \
-                             mass: float=xp.PROTON_MASS_EV, store_line: bool=True, seeds:Union[list,None]=None, 
+                             mass: float=xp.PROTON_MASS_EV, store_line: bool=True, seeds:list|None=None, 
                              other_madx_flag:dict={}, run_all_seeds: bool=False, raise_madx_critical_warning: bool=True):
         """_summary_
 
@@ -1036,12 +1035,12 @@ class DA:
     # =================================================================
 
     # Allowed on parallel process
-    def track_job(self, *,  npart: Union[int,None]=None, logging: bool=True, force_single_seed_per_job: Union[bool,None]=None, 
-                  with_progress: bool=False, co_search_at: Union[str,None]=None):
+    def track_job(self, *,  npart: int|None=None, logging: bool=True, force_single_seed_per_job: bool|None=None, 
+                  with_progress: bool=False, co_search_at: str|None=None):
         """Track the particles in the lines and automatically manage the seeds.
 
         Args:
-            npart (Union[int,None], optional):                 Max number of particle to track. Defaults to None.
+            npart (int | None, optional):                 Max number of particle to track. Defaults to None.
             logging (bool, optional):                          Add logging in the submission file. Defaults to True.
             force_single_seed_per_job (bool | None, optional): If True, force to track only one seed per job. Defaults to None.
             with_progress (bool, optional):                    Show progress while tracking. Defaults to False.
@@ -1454,7 +1453,7 @@ class DA:
 
     # Not allowed on parallel process
     # TODO: Fix description to fit the new data format
-    def calculate_da(self, at_turn: Union[int,None]=None, angular_precision: int=10, smoothing: bool=True, list_seed: Union[list,None]=None,
+    def calculate_da(self, at_turn: int|None=None, angular_precision: int=10, smoothing: bool=True, list_seed: list|None=None,
                      interp_order: str='1D', interp_method: str='trapz', force: bool=False, save: bool=True):
         """Compute the DA upper and lower estimation at a specific turn in the form of a pandas table ['turn','border','avg','min','max'] or for multiseeds { seed:['turn','border','avg','min','max'], 'stat':['turn','avg','min','max'] }
         
@@ -1732,7 +1731,7 @@ class DA:
 
     # Not allowed on parallel process
     # TODO: Fix description to fit the new data format
-    def calculate_davsturns(self, from_turn: int=1, to_turn: Union[int,None]=None, bin_size: int=1, 
+    def calculate_davsturns(self, from_turn: int=1, to_turn: int|None=None, bin_size: int=1, 
                             interp_order: str='1D', interp_method: str='trapz', force: bool=False, save: bool=True):
         """Compute the DA upper and lower evolution from a specific turn to another in the form of a pandas table ['turn','border','avg','min','max'] or for multiseeds { seed:['turn','border','avg','min','max'],  'stat':['turn','avg','min','max'] }
 
@@ -2149,7 +2148,7 @@ class DA:
 
     # Not allowed on parallel process
     def _fit_model(self, nb_param: int, data_type: tuple[str,str], model, name: str='user', 
-                   model_default: dict={}, model_boundary: dict={}, model_mask=None, seed: Union[int,None]=None, 
+                   model_default: dict={}, model_boundary: dict={}, model_mask=None, seed: int|None=None, 
                    nrand: int=1000, nsig: int=2, ntry: int=2, save: bool=True, force: bool=False, fix_seed: bool=True):
         """DA vs turns fitting procedure.
 
@@ -2305,9 +2304,9 @@ class DA:
 
             
     # Not allowed on parallel process
-    def _fit_model_from_list(self, nb_param: int, list_data_types: Union[list,None]=None, list_models: list=['2','2b','2n','4','4b','4n'],
-                             list_seeds: Union[list,None]=None, **kwargs):
-                            # list_seeds: Union[list,None]=None, nrand: int=1000, nsig: int=2, ntry: int=1, force: bool=False):
+    def _fit_model_from_list(self, nb_param: int, list_data_types: list|None=None, list_models: list=['2','2b','2n','4','4b','4n'],
+                             list_seeds: list|None=None, **kwargs):
+                            # list_seeds: list|None=None, nrand: int=1000, nsig: int=2, ntry: int=1, force: bool=False):
         """DA vs turns fitting procedure for a list of data_types, model or seed.
 
         Args:
@@ -2338,7 +2337,7 @@ class DA:
         
     # Not allowed on parallel process
     def get_model_parameters(self, data_type: list[str], model, nb_parm: int,
-                             keys: Union[list,None]=None, seed: Union[list,None]=None, name: str='user'): # -> tuple[function , dict, float]:
+                             keys: list|None=None, seed: list|None=None, name: str='user'): # -> tuple[function , dict, float]:
         """DA vs turns fitting procedure for a list of data_types, model or seed.
         Args:
             data_type (list[str]):        Data types as defined in `_fit_model`.
@@ -2407,7 +2406,7 @@ class DA:
     # =================================================================
 
     # Allowed on parallel process
-    def _create_job(self, npart: Union[int,None]=None, logging: bool=True, force_single_seed_per_job:Union[bool,None]=None):
+    def _create_job(self, npart: int|None=None, logging: bool=True, force_single_seed_per_job:bool|None=None):
         def _get_seeds_and_stuff(npart, logging):
             mask = (self._surv['submitted'] == False)
 #             if npart is None:
