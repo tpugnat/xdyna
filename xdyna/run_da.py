@@ -120,7 +120,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     emitt = float(arguments.popleft())
                     if (len(arguments) != 0) and (arguments[0][0] != '-'):
                         emitt = (emitt,float(arguments.popleft()))
-                    DA_config['normalised_emittance'] = emitt
+                    operands['normalised_emittance'] = emitt
                     continue
 
                 elif arg in MAIN_OPERANDS:
