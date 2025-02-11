@@ -8,7 +8,8 @@ print("PYTHONPATH:", sys.path)
 
 # import xtrack
 # import xpart
-from xdyna.da import DA
+from .da import DA
+# from xdyna.da import DA
 # from .da_meta import _DAMetaData
 # DA = int
 
@@ -52,7 +53,6 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
     if DA_config['study'] in ("-h", "--help"):
         print(USAGE)
         sys.exit(0)
-
     
     if arguments[0][0] != '-':
         DA_config['default_path'] = Path(arguments.popleft())
@@ -351,8 +351,6 @@ def get_line(da_study: DA, config:dict):
             raise ValueError(f"Line file already exists: {da_study.line_file} and {config['line_file']}")
         else:
             da_study.line_file = config.pop('line_file')
-
-
     if not da_study.line_file.exist() and config['build_line_from_madx']:
         da_study.build_line_from_madx(**config)
     else:
