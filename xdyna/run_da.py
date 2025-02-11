@@ -36,7 +36,12 @@ def converte_str_to_int_and_float(element: any):
             nelement = int(element)
         return nelement
     except ValueError:
-        return element
+        if element.lower() == 'true' or element.lower() == 't':
+            return True
+        elif element.lower() == 'false' or element.lower() == 'f':
+            return False
+        else:
+            return element
 
 
 def parse(args: List[str]) -> Tuple[str, Path, Dict]:
