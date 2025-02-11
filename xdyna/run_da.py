@@ -118,7 +118,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
                 if arg == '-emitt':
                     emitt = float(arguments.popleft())
-                    if arguments and arguments[0][0] != '-':
+                    if (len(arguments) != 0) and (arguments[0][0] != '-'):
                         emitt = (emitt,float(arguments.popleft()))
                     DA_config['normalised_emittance'] = emitt
                     continue
