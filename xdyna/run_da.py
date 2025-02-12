@@ -113,7 +113,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     diff_operands = {kk:vv for kk,vv in diff_operands.items() if kk not in operands['Create']}
                     operands['Create'] = {**operands['Create'], **diff_operands}
 
-                if arg == '-emitt':
+                elif arg == '-emitt':
                     emitt = float(arguments.popleft())
                     if (len(arguments) != 0) and (arguments[0][0] != '-'):
                         emitt = (emitt,float(arguments.popleft()))
@@ -131,7 +131,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     continue
 
                 else:
-                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
+                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
             continue
 
         if arg in ("-l", "--line_settings"):
@@ -173,7 +173,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     continue
 
                 else:
-                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
+                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
 
         # if arg in ("-m", "--madx_file"):
         #     if 'Generate_line' not in operands:
@@ -202,7 +202,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     diff_operands = {kk:vv for kk,vv in DEFAULT_GENERATE_PARTICLES_PARAMETERS[particle_type].items() if kk not in operands['Generate_particles']}
                     operands['Generate_particles'] = {**operands['Generate_particles'], **diff_operands}
 
-                if arg in MAIN_OPERANDS:
+                elif arg in MAIN_OPERANDS:
                     arguments.appendleft(arg)
                     arg = None
                     break
@@ -213,7 +213,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     continue
 
                 else:
-                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
+                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
             continue
 
         if arg in ("-rp", "--rerun_particles"):
@@ -269,12 +269,12 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     continue
 
                 else:
-                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
+                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
 
             if arg is not None:
-                raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
+                raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
         if arguments and arg is not None and arg not in MAIN_OPERANDS:
-            raise SystemExit(f'Wrong key format starting from:\n    {arg+" ".join(arguments)}\n\n' + USAGE)
+            raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
     
 
         # try:
