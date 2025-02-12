@@ -187,7 +187,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
         #     operands['Generate_line']['madx_file'] = arguments.popleft()
         #     continue
 
-        if arg in ("-s", "--status"):
+        if arg in ("-st", "--status"):
             operands['Status'] = True
             continue
 
@@ -295,8 +295,8 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
 # =================================================================================================
 def get_DA(config: Dict, operands: Dict):
-    path = Path(config.get('default_path'))
-    study= config.get('study')
+    path = Path(config.pop('default_path'))
+    study= config.pop('study')
     if 'Create' not in operands:
         # Check if the study already exists in different path
         if (path / study / (study+'.meta.json')).exists() or \
