@@ -322,7 +322,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
 # =================================================================================================
 def get_DA(config: Dict, operands: Dict):
-    path = config.get('default_path')
+    path = Path(config.get('default_path'))
     study= config.get('study')
     if 'Create' not in operands:
         if (path / study / study+'meta.json').is_file() or \
