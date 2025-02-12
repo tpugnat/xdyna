@@ -326,17 +326,17 @@ def get_DA(config: Dict, operands: Dict):
     study= config.get('study')
     if 'Create' not in operands:
         # Check if the study already exists in different path
-        if (path / study / (study+'meta.json')).is_file() or \
-            (path / study / (study+'meta.csv')).is_file():
+        if (path / study / (study+'.meta.json')).exists() or \
+            (path / study / (study+'.meta.csv')).exists():
             path = path / study
-        elif not ((path / (study+'meta.json')).is_file() or \
-            (path / (study+'meta.csv')).is_file()):
+        elif not ((path / (study+'.meta.json')).exists() or \
+            (path / (study+'.meta.csv')).exists()):
             raise FileNotFoundError(f"{study} not found in {path}")
         # Load the study
-        if (path / (study+'meta.json')).is_file():
+        if (path / (study+'.meta.json')).exists():
             print(f'   -> Loading study {study} from {path}')
             return DA(name=study, path=path, **config)
-        elif (path / (study+'meta.csv')).is_file():
+        elif (path / (study+'.meta.csv')).exists():
             print(f'   -> Loading study {study} from SixDesk input located at {path}')
             from xdyna.da import load_sixdesk_output
             if 'normalised_emittance' not in config:
@@ -346,15 +346,20 @@ def get_DA(config: Dict, operands: Dict):
             raise FileNotFoundError(f"Study {config['study']} not found in {path}")
     else:
         # Check if the study already exists in different path and return an error, else create the study
-        if  (path / (study+'meta.json')).is_file():
+        print(f'{(path / (study+'.meta.json')).exists()=}')
+        print(f'{(path /  study / (study+'.meta.json')).exists()=}')
+        print(f'{(path / (study+'.meta.csv')).exists()=}')
+        print(f'{(path /  study / (study+'.meta.csv')).exists()=}')
+        if  (path / (study+'.meta.json')).exists():
             raise FileExistsError(f"Study {study} already exists in {path}")
-        elif  (path / study / (study+'meta.json')).is_file():
+        elif  (path / study / (study+'.meta.json')).exists():
             raise FileExistsError(f"Study {study} already exists in {path / study}")
-        elif  (path / (study+'meta.csv')).is_file():
+        elif  (path / (study+'.meta.csv')).exists():
             raise FileExistsError(f"Study {study} already exists in {path} as SixDesk input")
-        elif  (path / study / (study+'meta.csv')).is_file():
+        elif  (path / study / (study+'.meta.csv')).exists():
             raise FileExistsError(f"Study {study} already exists in {path / study} as SixDesk input")
         else:
+            print(f'   -> Create study {study} at {path}')
             return DA(name=study, path=path, **config, **operands['Create'])
         
         
