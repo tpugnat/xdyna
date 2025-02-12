@@ -46,3 +46,60 @@ DA = xd.DA(name=study, use_files=True)
 # The code will automatically look for particles that are not-submitted yet and use these.
 DA.track_job(npart=100)
 ```
+
+## Command line description
+
+With the latest update,`xdyna` can be run directly from the a Terminal. 
+Those command can handle the basic functions from `xdyna` such as: study creation; line generation/loading; particles generation; job submission to htcondor/boinc; showing the study status; and tracking.
+
+`xdyna` is call using the command `python -m xaux.run_da <study> [<path>] <operands>`. 
+If the path is not specified, `xdyna` will look for meta file in the current directory or in any directory with the same name as the study.
+
+Here are examples of the different functionnalities and a quick description of the associated operand:
+
+- Class creation [`-c`, `--create`]:
+
+This option is used for the creation of a new study and can be followed by the element of the class initialisation description as such:
+```Shell
+python -m xaux.run_da <study> [<path>] -c -nseeds 60 -max_turns 1e5 -emitt 2.5e-6
+python -m xaux.run_da <study> [<path>] -c -nseeds 60 -max_turns 1e5 -emitt 2.5e-6 2.5e-6
+```
+
+A fast command for typical DA studies with 60 seeds can be called using the command `-default`. 
+Any added command based on the class initialisation description will overwrite the default settings.
+```Shell
+python -m xaux.run_da <study> [<path>] -c -default
+python -m xaux.run_da <study> [<path>] -c -default -nseeds 0
+```
+
+- Line creation and loading [`-l`, `--line_settings`]:
+
+This option is used for the creation and/or loading of the line(s).
+It must be followed by either the command for the madx mask file and/or  the line file. 
+If not, the line in memory will be loaded.
+```Shell
+python -m xaux.run_da <study> [<path>] -l --line_file <line_file>
+python -m xaux.run_da <study> [<path>] -l --madx_file <madx_file> --line_file <line_file>
+```
+
+If any option starting with `%` will be replace in the mask. Any other option will be passed  as parameter to either `build_line_from_madx` if the line file does not exist, or `load_line_from_file`.
+```Shell
+python -m xaux.run_da <study> [<path>] -l --madx_file <madx_file> -sequence lhcb1 -%XING 250
+```
+
+- Generation of the particle distribution [`-gp`, `--generate_particles`]:
+
+This option is used for the generation of the particle distribution and must be followed by the type: `"radial"`, `"grid"`, or `"random"`.
+The option after correspond to the argument of the respective distribution generator function.
+```Shell
+python -m xaux.run_da <study> [<path>] -gp radial -r_min 10 -r_max 20 -angles 11
+```
+if `r_num` and `r_step` are not specified, the 30 particles will be distributed over step of 2 sigma.
+
+A fast command for typical DA studies with 60 seeds can be called using the command `-default`. 
+Any added command based on the class initialisation description will overwrite the default settings.
+```Shell
+python -m xaux.run_da <study> [<path>] -gp radial -default
+python -m xaux.run_da <study> [<path>] -gp radial -default -r_min 10
+```
+
