@@ -328,6 +328,8 @@ def get_DA(config: Dict, operands: Dict):
         elif  (path / study / (study+'.meta.csv')).exists():
             raise FileExistsError(f"Study {study} already exists in {path / study} as SixDesk input")
         else:
+            if not path.exists():
+                path.mkdir(parents=True)
             print(f'   -> Create study {study} at {path}')
             return DA(name=study, path=path, **config, **operands['Create'])
         
