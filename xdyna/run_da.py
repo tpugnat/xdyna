@@ -22,7 +22,13 @@ MAIN_OPERANDS = ["-p", "--path", "-c", "--create", "-s", "--status", "-gp", "--g
                  "-rp", "--rerun_particles", "-t", "--track", "-htc", "--htcondor", "-l", "--line_settings",
                  "--generate_config_htcondor", "--run_config_htcondor", "--use_files", "--read_only"]   
 
+DEFAULT_GENERATE_PARTICLES_PARAMETERS = {
+    'radial': {'r_min': 6, 'r_max': 20, 'delta':0.00027, 'pairs_shift':1e-7, 'pairs_shift_var':'x'},
+    'grid': {},
+    'random': {},
+}
 
+DEFAULT_CREATE_PARAMETERS = {'nseeds':60, 'max_turns':1e5, 'emitt': 2.5e-6}
 
 # =================================================================================================
 def converte_str_to_int_and_float(element: any):
@@ -99,29 +105,13 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
             while arguments:
                 arg = arguments.popleft()
 
-                # if arg == "--use_files":
-                #     DA_config['use_files'] = True
-                #     if arguments and arguments[0][0] != '-':
-                #         DA_config['use_files'] = bool(arguments.popleft())
-                #     continue
-
-                # elif arg == "--read_only":
-                #     DA_config['read_only'] = True
-                #     if arguments and arguments[0][0] != '-':
-                #         DA_config['read_only'] = bool(arguments.popleft())
-                #     continue
-
-                # elif arg in ("-m", "--madx_file"):
-                #     if 'Generate_line' not in operands:
-                #         operands['Generate_line'] = {}
-                #     operands['Generate_line']['madx_file'] = arguments.popleft()
-                #     continue
-
-                # elif arg in ("-l", "--madx_file"):
-                #     if 'Generate_line' not in operands:
-                #         operands['Generate_line'] = {}
-                #     operands['Generate_line']['madx_file'] = arguments.popleft()
-                #     continue
+                if arg == '-default':
+                    diff_operands = DEFAULT_CREATE_PARAMETERS.copy()
+                    emitt = diff_operands.pop('emitt')
+                    if 'normalised_emittance' not in DA_config:
+                        DA_config['normalised_emittance'] = emitt
+                    diff_operands = {kk:vv for kk,vv in diff_operands.items() if kk not in operands['Create']}
+                    operands['Create'] = {**operands['Create'], **diff_operands}
 
                 if arg == '-emitt':
                     emitt = float(arguments.popleft())
@@ -145,15 +135,16 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
             continue
 
         if arg in ("-l", "--line_settings"):
-            operands['Generate_line'] = {'build_line_from_madx':False, 'other_madx_flag':{}}
+            # operands['Generate_line'] = {'build_line_from_madx':False, 'other_madx_flag':{}}
+            operands['Generate_line'] = {'other_madx_flag':{}}
 
             while arguments:
                 arg = arguments.popleft()
-                if arg == "-build_from_madx":
-                    operands['Generate_line']['build_line_from_madx'] = True
-                    continue
+                # if arg == "-build_from_madx":
+                #     operands['Generate_line']['build_line_from_madx'] = True
+                #     continue
 
-                elif arg in ("-m", "--madx_file"):
+                if arg in ("-m", "--madx_file"):
                     operands['Generate_line']['madx_file'] = arguments.popleft()
                     continue
 
@@ -201,33 +192,15 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
             continue
 
         if arg in ("-gp", "--generate_particles"):
-            operands['Generate_particles'] = {'type': arguments.popleft()}
+            particle_type = arguments.popleft()
+            operands['Generate_particles'] = {'type': particle_type}
 
             while arguments:
                 arg = arguments.popleft()
-                # if arg == "--use_files":
-                #     DA_config['use_files'] = True
-                #     if arguments and arguments[0][0] != '-':
-                #         DA_config['use_files'] = bool(arguments.popleft())
-                #     continue
 
-                # elif arg == "--read_only":
-                #     DA_config['read_only'] = True
-                #     if arguments and arguments[0][0] != '-':
-                #         DA_config['read_only'] = bool(arguments.popleft())
-                #     continue
-
-                # elif arg in ("-m", "--madx_file"):
-                #     if 'Generate_line' not in operands:
-                #         operands['Generate_line'] = {}
-                #     operands['Generate_line']['madx_file'] = arguments.popleft()
-                #     continue
-
-                # elif arg in ("-l", "--madx_file"):
-                #     if 'Generate_line' not in operands:
-                #         operands['Generate_line'] = {}
-                #     operands['Generate_line']['madx_file'] = arguments.popleft()
-                #     continue
+                if arg == '-default':
+                    diff_operands = {kk:vv for kk,vv in DEFAULT_GENERATE_PARTICLES_PARAMETERS[particle_type].items() if kk not in operands['Generate_particles']}
+                    operands['Generate_particles'] = {**operands['Generate_particles'], **diff_operands}
 
                 if arg in MAIN_OPERANDS:
                     arguments.appendleft(arg)
@@ -346,10 +319,6 @@ def get_DA(config: Dict, operands: Dict):
             raise FileNotFoundError(f"Study {config['study']} not found in {path}")
     else:
         # Check if the study already exists in different path and return an error, else create the study
-        print(f"{(path / (study+'.meta.json')).exists()=}")
-        print(f"{(path /  study / (study+'.meta.json')).exists()=}")
-        print(f"{(path / (study+'.meta.csv')).exists()=}")
-        print(f"{(path /  study / (study+'.meta.csv')).exists()=}")
         if  (path / (study+'.meta.json')).exists():
             raise FileExistsError(f"Study {study} already exists in {path}")
         elif  (path / study / (study+'.meta.json')).exists():
@@ -366,9 +335,14 @@ def get_DA(config: Dict, operands: Dict):
 
 def get_line(da_study: DA, config:dict):
     print(f'   -> Loading the line')
+    # Manage the madx mask file
     if 'madx_file' in config:
-        print(f'      -> A madx mask has been specified.')
-        da_study.madx_file = config.pop('madx_file')
+        print(f'      -> A madx mask has been specified and copy has been made in the study directory.')
+        madx_file = config.pop('madx_file')
+        da_study.madx_file = da_study.meta.path / (da_study.meta.name+'.madx')
+        import shutil
+        shutil.copy(madx_file,DA.madx_file)
+    # Manage the line file
     if 'line_file' in config:
         if da_study.line_file is None:
             print(f'      -> A line file has been specified.')
@@ -380,15 +354,29 @@ def get_line(da_study: DA, config:dict):
     elif da_study.madx_file is not None:
         print(f'      -> A line file will be created in the study directory.')
         da_study.line_file = da_study.meta.path / (da_study.meta.name+'.line.json')
-    if not da_study.line_file.exist():
+    # Generate the line if a mask has been given.
+    if not da_study.line_file.exists():
         if da_study.madx_file is not None:
-            print(f'      -> The line will be created.')
-            da_study.build_line_from_madx(**config)
+            print(f'      -> The line will be created with extra variables:')
+            if 'sequence' in config:
+                sequence = config.pop('sequence')
+            else:
+                bb = int(da_study.meta.name[-1])
+                sequence= 'lhcb1' if bb<3 else 'lhcb2'
+            print(f'         -> The selected sequence is {sequence}')
+            variable_to_replace_in_mask= {'%EMIT_BEAM': 2.5,'%NPART': 1,'%XING': 250,}
+            for key in config.key():
+                if key[0] == '%':
+                    variable_to_replace_in_mask[key] = config.pop(key)
+            print(f'         -> The following parameter will be replace in the mask: {variable_to_replace_in_mask}')
+            if 'run_all_seeds' not in config:
+                config['run_all_seeds'] = (da_study.meta.nseeds!=0)
+            da_study.build_line_from_madx(sequence=sequence, other_madx_flag= variable_to_replace_in_mask, **config)
         else:
             raise FileNotFoundError(f"Either a madx file and/or a line file should be provided")
-    else:
-        print(f'      -> The line will be loaded.')
-        da_study.load_line_from_file()
+    # else:
+    #     print(f'      -> The line will be loaded.')
+    #     da_study.load_line_from_file()
 
 
 def generate_particles(da_study: DA, config:dict):
@@ -398,6 +386,8 @@ def generate_particles(da_study: DA, config:dict):
         da_study.generate_random_initial(**config)
     elif type_dist == 'radial':
         print(f'   -> Generating radial initial distribution of particles')
+        if 'r_num' not in config and 'r_step' not in config:
+            config['r_num'] = (29*( (config['r_max']-config['r_min']) // 2 ) +1)
         da_study.generate_initial_radial(**config) 
     elif type_dist == 'grid':
         print(f'   -> Generating grid initial distribution of particles')
