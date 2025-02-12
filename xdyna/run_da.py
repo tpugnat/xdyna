@@ -343,7 +343,7 @@ def get_line(da_study: DA, config:dict):
         madx_file = config.pop('madx_file')
         da_study.madx_file = da_study.meta.path / (da_study.meta.name+'.madx')
         import shutil
-        shutil.copy(madx_file,DA.madx_file)
+        shutil.copy(madx_file,da_study.madx_file)
     # Manage the line file
     if 'line_file' in config:
         if da_study.line_file is None:
