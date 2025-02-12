@@ -23,7 +23,7 @@ MAIN_OPERANDS = ["-p", "--path", "-c", "--create", "-s", "--status", "-gp", "--g
                  "--generate_config_htcondor", "--run_config_htcondor", "--use_files", "--read_only"]   
 
 DEFAULT_GENERATE_PARTICLES_PARAMETERS = {
-    'radial': {'r_min': 6, 'r_max': 20, 'delta':0.00027, 'pairs_shift':1e-7, 'pairs_shift_var':'x'},
+    'radial': {'angles': 11, 'r_min': 6, 'r_max': 20, 'delta':0.00027, 'pairs_shift':1e-7, 'pairs_shift_var':'x'},
     'grid': {},
     'random': {},
 }
@@ -144,11 +144,11 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                 #     operands['Generate_line']['build_line_from_madx'] = True
                 #     continue
 
-                if arg in ("-m", "--madx_file"):
+                if arg in ("-mf", "--madx_file"):
                     operands['Generate_line']['madx_file'] = arguments.popleft()
                     continue
 
-                elif arg in ("-l", "--line_file"):
+                elif arg in ("-lf", "--line_file"):
                     operands['Generate_line']['line_file'] = arguments.popleft()
                     continue
 
@@ -366,7 +366,7 @@ def get_line(da_study: DA, config:dict):
                 bb = int(da_study.meta.name[-1])
                 sequence= 'lhcb1' if bb<3 else 'lhcb2'
             print(f'         -> The selected sequence is {sequence}')
-            variable_to_replace_in_mask= {'%EMIT_BEAM': 2.5,'%NPART': 1,'%XING': 250,}
+            variable_to_replace_in_mask= {'%EMIT_BEAM': 1e6*da_study.nemitt_x,'%NPART': 1,'%XING': 250,}
             for key in config.keys():
                 if key[0] == '%':
                     variable_to_replace_in_mask[key] = config.pop(key)
@@ -376,9 +376,9 @@ def get_line(da_study: DA, config:dict):
             da_study.build_line_from_madx(sequence=sequence, other_madx_flag= variable_to_replace_in_mask, **config)
         else:
             raise FileNotFoundError(f"Either a madx file and/or a line file should be provided")
-    # else:
-    #     print(f'      -> The line will be loaded.')
-    #     da_study.load_line_from_file()
+    else:
+        print(f'      -> The line will be loaded.')
+        da_study.load_line_from_file(**config)
 
 
 def generate_particles(da_study: DA, config:dict):
