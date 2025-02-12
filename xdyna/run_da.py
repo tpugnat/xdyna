@@ -334,7 +334,7 @@ def get_DA(config: Dict, operands: Dict):
 
         if (path / (study+'meta.json')).is_file():
             print(f'   -> Loading study {study} from {path}')
-            return DA(path=path, **config)
+            return DA(name=study, path=path, **config)
         elif (path / (study+'meta.csv')).is_file():
             print(f'   -> Loading study {study} from SixDesk input located at {path}')
             from xdyna.da import load_sixdesk_output
@@ -345,9 +345,9 @@ def get_DA(config: Dict, operands: Dict):
             raise FileNotFoundError(f"Study {config['study']} not found in {path}")
         
     else:
-        if not (path / study+'meta.json').is_file():
+        if not (path / (study+'meta.json')).is_file():
             print(f'   -> Genetating study {study} from {path}')
-            return DA(path=path, **config, **operands['Create'])
+            return DA(name=study, path=path, **config, **operands['Create'])
         else:
             raise FileExistsError(f"Study {study} already exists in {path}")
         
