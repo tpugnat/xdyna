@@ -136,7 +136,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
         if arg in ("-l", "--line_settings"):
             # operands['Generate_line'] = {'build_line_from_madx':False, 'other_madx_flag':{}}
-            operands['Generate_line'] = {'other_madx_flag':{}}
+            operands['Generate_line'] = {}
 
             while arguments:
                 arg = arguments.popleft()
@@ -168,7 +168,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     break
 
                 elif arguments and arguments[0][0] != '-':
-                    operands['Create'][arg[1:]] = converte_str_to_int_and_float(arguments.popleft())
+                    operands['Generate_line'][arg[1:]] = converte_str_to_int_and_float(arguments.popleft())
                     arg = None
                     continue
 
