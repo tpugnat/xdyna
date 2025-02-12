@@ -79,6 +79,13 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                 DA_config['use_files'] = bool(arguments.popleft())
             continue
 
+        if arg == '-emitt':
+            emitt = float(arguments.popleft())
+            if (len(arguments) != 0) and (arguments[0][0] != '-'):
+                emitt = (emitt,float(arguments.popleft()))
+            DA_config['normalised_emittance'] = emitt
+            continue
+
         if arg == "--read_only":
             DA_config['read_only'] = True
             if arguments and arguments[0][0] != '-':
@@ -120,7 +127,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     emitt = float(arguments.popleft())
                     if (len(arguments) != 0) and (arguments[0][0] != '-'):
                         emitt = (emitt,float(arguments.popleft()))
-                    operands['normalised_emittance'] = emitt
+                    DA_config['normalised_emittance'] = emitt
                     continue
 
                 elif arg in MAIN_OPERANDS:
@@ -154,15 +161,15 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     operands['Generate_line']['line_file'] = arguments.popleft()
                     continue
 
-                elif arg == "-other_madx_flag":
-                    while arguments:
-                        flag = arguments.popleft()
-                        if flag[0] == '-':
-                            arguments.appendleft(flag)
-                            break
-                        value = arguments.popleft()
-                        operands['Generate_line']['other_madx_flag'][flag] = value
-                    continue
+                # elif arg == "-other_madx_flag":
+                #     while arguments:
+                #         flag = arguments.popleft()
+                #         if flag[0] == '-':
+                #             arguments.appendleft(flag)
+                #             break
+                #         value = arguments.popleft()
+                #         operands['Generate_line']['other_madx_flag'][flag] = value
+                #     continue
 
                 elif arg in MAIN_OPERANDS:
                     arguments.appendleft(arg)
@@ -315,66 +322,80 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
 # =================================================================================================
 def get_DA(config: Dict, operands: Dict):
-    default_path = config.pop(['default_path'])
+    path = config.get(['default_path'])
+    study= config.get(['study'])
     if 'Create' not in operands:
+        if (path / study / study+'meta.json').is_file() or \
+            (path / study / study+'meta.csv').is_file():
+            path = path / study
+        elif not ((path / study+'meta.json').is_file() or \
+            (path / study+'meta.csv').is_file()):
+            raise FileNotFoundError(f"{study} not found in {path}")
 
-        if (default_path / config['study']+'meta.json').is_file() or \
-            (default_path / config['study']+'meta.csv').is_file():
-            path = default_path
-
-        elif (default_path / config['study'] / config['study']+'meta.json').is_file() or \
-            (default_path / config['study'] / config['study']+'meta.csv').is_file():
-            path = default_path / config['study']
-
-        else:
-            raise FileNotFoundError(f"{config['study']} not found in {default_path}")
-        
-        if (path / config['study']+'meta.json').is_file():
+        if (path / study+'meta.json').is_file():
+            print(f'   -> Loading study {study} from {path}')
             return DA(path=path, **config)
-        
-        elif (path / config['study']+'meta.csv').is_file():
+        elif (path / study+'meta.csv').is_file():
+            print(f'   -> Loading study {study} from SixDesk input located at {path}')
             from xdyna.da import load_sixdesk_output
-            return load_sixdesk_output(path=path, study=config['study'], nemit = config['normalised_emittance'])
-        
+            if 'normalised_emittance' not in config:
+                config['normalised_emittance'] = 2.5
+            return load_sixdesk_output(path=path, study=study, nemit = config['normalised_emittance'])
         else:
             raise FileNotFoundError(f"Study {config['study']} not found in {path}")
         
     else:
-        if not (default_path / config['study']+'meta.json').is_file():
-            return DA(path=default_path, **config, **operands['Create'])
+        if not (path / study+'meta.json').is_file():
+            print(f'   -> Genetating study {study} from {path}')
+            return DA(path=path, **config, **operands['Create'])
         else:
-            raise FileExistsError(f"Study {config['study']} already exists in {default_path}")
+            raise FileExistsError(f"Study {study} already exists in {path}")
         
 
 def get_line(da_study: DA, config:dict):
+    print(f'   -> Loading the line')
     if 'madx_file' in config:
+        print(f'      -> A madx mask has been specified.')
         da_study.madx_file = config.pop('madx_file')
     if 'line_file' in config:
         if da_study.line_file is None:
+            print(f'      -> A line file has been specified.')
             da_study.line_file = config.pop('line_file')
-        elif da_study.line_file != config['line_file'] and config['build_line_from_madx']:
+        elif da_study.line_file != config['line_file']:
             raise ValueError(f"Line file already exists: {da_study.line_file} and {config['line_file']}")
         else:
             da_study.line_file = config.pop('line_file')
-    if not da_study.line_file.exist() and config['build_line_from_madx']:
-        da_study.build_line_from_madx(**config)
+    elif da_study.madx_file is not None:
+        print(f'      -> A line file will be created in the study directory.')
+        da_study.line_file = da_study.meta.path / (da_study.meta.name+'.line.json')
+    if not da_study.line_file.exist():
+        if da_study.madx_file is not None:
+            print(f'      -> The line will be created.')
+            da_study.build_line_from_madx(**config)
+        else:
+            raise FileNotFoundError(f"Either a madx file and/or a line file should be provided")
     else:
+        print(f'      -> The line will be loaded.')
         da_study.load_line_from_file()
 
 
 def generate_particles(da_study: DA, config:dict):
     type_dist = config.pop('type')
     if type_dist == 'random':
+        print(f'   -> Generating random initial distribution of particles')
         da_study.generate_random_initial(**config)
     elif type_dist == 'radial':
+        print(f'   -> Generating radial initial distribution of particles')
         da_study.generate_initial_radial(**config) 
     elif type_dist == 'grid':
+        print(f'   -> Generating grid initial distribution of particles')
         da_study.generate_initial_grid(**config)
     else:
         raise ValueError(f"Type of distribution {type_dist} not implemented. `random`, `radial` or `grid` are allowed")
 
 
 def generate_config_htcondor(da_study: DA):
+    raise NotImplementedError("generate_config_htcondor not implemented yet")
     path = da_study.meta.path
     study = da_study.meta.name
 
@@ -438,6 +459,7 @@ def generate_config_htcondor(da_study: DA):
 
 
 def run_htcondor(da_study: DA):
+    raise NotImplementedError("run_htcondor not implemented yet")
     file = Path(da_study.meta.path / f"config_htcondor_track_{da_study.meta.name}.ini")
     if file.exists():
         if 'pylhc_submitter' in sys.modules:
@@ -480,15 +502,15 @@ def run_da(argv) -> None:
     # import xdyna
     # print(Path(xdyna.__file__).parent)
 
-    # da_study = get_DA(config, operands)
-    # if 'Generate_line' in operands:
-    #     get_line(da_study, operands['Generate_line'])
+    da_study = get_DA(config, operands)
+    if 'Generate_line' in operands:
+        get_line(da_study, operands['Generate_line'])
 
-    # if  'Generate_particles' in operands:
-    #     generate_particles(da_study, operands['Generate_particles'])
+    if  'Generate_particles' in operands:
+        generate_particles(da_study, operands['Generate_particles'])
 
-    # if 'Rerun_particles' in operands:
-    #     da_study.resubmit_unfinished()
+    if 'Rerun_particles' in operands:
+        da_study.resubmit_unfinished()
 
     # if 'Status' in operands:
     #     status(da_study)
