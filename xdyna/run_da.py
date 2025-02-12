@@ -346,10 +346,10 @@ def get_DA(config: Dict, operands: Dict):
             raise FileNotFoundError(f"Study {config['study']} not found in {path}")
     else:
         # Check if the study already exists in different path and return an error, else create the study
-        print(f'{(path / (study+'.meta.json')).exists()=}')
-        print(f'{(path /  study / (study+'.meta.json')).exists()=}')
-        print(f'{(path / (study+'.meta.csv')).exists()=}')
-        print(f'{(path /  study / (study+'.meta.csv')).exists()=}')
+        print(f"{(path / (study+'.meta.json')).exists()=}")
+        print(f"{(path /  study / (study+'.meta.json')).exists()=}")
+        print(f"{(path / (study+'.meta.csv')).exists()=}")
+        print(f"{(path /  study / (study+'.meta.csv')).exists()=}")
         if  (path / (study+'.meta.json')).exists():
             raise FileExistsError(f"Study {study} already exists in {path}")
         elif  (path / study / (study+'.meta.json')).exists():
