@@ -325,13 +325,14 @@ def get_DA(config: Dict, operands: Dict):
     path = Path(config.get('default_path'))
     study= config.get('study')
     if 'Create' not in operands:
+        # Check if the study already exists in different path
         if (path / study / (study+'meta.json')).is_file() or \
             (path / study / (study+'meta.csv')).is_file():
             path = path / study
         elif not ((path / (study+'meta.json')).is_file() or \
             (path / (study+'meta.csv')).is_file()):
             raise FileNotFoundError(f"{study} not found in {path}")
-
+        # Load the study
         if (path / (study+'meta.json')).is_file():
             print(f'   -> Loading study {study} from {path}')
             return DA(name=study, path=path, **config)
@@ -343,13 +344,19 @@ def get_DA(config: Dict, operands: Dict):
             return load_sixdesk_output(path=path, study=study, nemit = config['normalised_emittance'])
         else:
             raise FileNotFoundError(f"Study {config['study']} not found in {path}")
-        
     else:
-        if not (path / (study+'meta.json')).is_file():
-            print(f'   -> Genetating study {study} from {path}')
-            return DA(name=study, path=path, **config, **operands['Create'])
-        else:
+        # Check if the study already exists in different path and return an error, else create the study
+        if  (path / (study+'meta.json')).is_file():
             raise FileExistsError(f"Study {study} already exists in {path}")
+        elif  (path / study / (study+'meta.json')).is_file():
+            raise FileExistsError(f"Study {study} already exists in {path / study}")
+        elif  (path / (study+'meta.csv')).is_file():
+            raise FileExistsError(f"Study {study} already exists in {path} as SixDesk input")
+        elif  (path / study / (study+'meta.csv')).is_file():
+            raise FileExistsError(f"Study {study} already exists in {path / study} as SixDesk input")
+        else:
+            return DA(name=study, path=path, **config, **operands['Create'])
+        
         
 
 def get_line(da_study: DA, config:dict):
