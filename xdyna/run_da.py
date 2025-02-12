@@ -367,7 +367,7 @@ def get_line(da_study: DA, config:dict):
                 sequence= 'lhcb1' if bb<3 else 'lhcb2'
             print(f'         -> The selected sequence is {sequence}')
             variable_to_replace_in_mask= {'%EMIT_BEAM': 2.5,'%NPART': 1,'%XING': 250,}
-            for key in config.key():
+            for key in config.keys():
                 if key[0] == '%':
                     variable_to_replace_in_mask[key] = config.pop(key)
             print(f'         -> The following parameter will be replace in the mask: {variable_to_replace_in_mask}')
