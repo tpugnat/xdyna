@@ -325,17 +325,17 @@ def get_DA(config: Dict, operands: Dict):
     path = Path(config.get('default_path'))
     study= config.get('study')
     if 'Create' not in operands:
-        if (path / study / study+'meta.json').is_file() or \
-            (path / study / study+'meta.csv').is_file():
+        if (path / study / (study+'meta.json')).is_file() or \
+            (path / study / (study+'meta.csv')).is_file():
             path = path / study
-        elif not ((path / study+'meta.json').is_file() or \
-            (path / study+'meta.csv').is_file()):
+        elif not ((path / (study+'meta.json')).is_file() or \
+            (path / (study+'meta.csv')).is_file()):
             raise FileNotFoundError(f"{study} not found in {path}")
 
-        if (path / study+'meta.json').is_file():
+        if (path / (study+'meta.json')).is_file():
             print(f'   -> Loading study {study} from {path}')
             return DA(path=path, **config)
-        elif (path / study+'meta.csv').is_file():
+        elif (path / (study+'meta.csv')).is_file():
             print(f'   -> Loading study {study} from SixDesk input located at {path}')
             from xdyna.da import load_sixdesk_output
             if 'normalised_emittance' not in config:
