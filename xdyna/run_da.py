@@ -226,6 +226,9 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
             while arguments:
                 arg = arguments.popleft()
+                
+                print(f'\n{operands["Submit"]=}\n')
+                print(f'{arg=}, {arguments=}\n')
 
                 if arg == '-auto':
                     operands['Submit']['auto'] = converte_str_to_int_and_float(arguments.popleft())
