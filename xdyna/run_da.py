@@ -4,7 +4,7 @@ from pathlib import Path
 from pprint  import pprint
 from typing  import Dict, List, Tuple
 
-print("PYTHONPATH:", sys.path)
+# print("PYTHONPATH:", sys.path)
 
 # import xtrack
 # import xpart
@@ -239,7 +239,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     break
 
                 elif arguments and arguments[0][0] != '-':
-                    operands['Generate_particles'][arg[1:]] = converte_str_to_int_and_float(arguments.popleft())
+                    operands['Submit'][arg[1:]] = converte_str_to_int_and_float(arguments.popleft())
                     arg = None
                     continue
 
