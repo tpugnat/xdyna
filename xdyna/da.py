@@ -1221,10 +1221,9 @@ class DA:
         from xaux.jobmanager import JobManager
         jm = None
         if platform == 'htcondor':
-            if self.meta.da_htcondor_meta.exists():
-                jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
-            else:
-                raise ValueError("No HTCondor meta file found.")
+            if not self.meta.da_htcondor_meta.exists():
+                return
+            jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
         elif platform == 'boinc':
             raise NotImplementedError("BOINC not yet implemented.")
         else:
@@ -1380,8 +1379,6 @@ class DA:
         if platform == 'htcondor':
             if self.meta.da_htcondor_meta.exists():
                 jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
-            else:
-                raise ValueError("No HTCondor meta file found.")
         elif platform == 'boinc':
             raise NotImplementedError("BOINC not yet implemented.")
         else:
