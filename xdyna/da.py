@@ -1216,7 +1216,7 @@ class DA:
 
 
     # NOT allowed on parallel process!
-    def retrive_jobs(self, platform: str='htcondor'):
+    def retrive_jobs(self, platform: str='htcondor', **kwarg):
         # Load the Job_Manager
         from xaux.jobmanager import JobManager
         jm = None
@@ -1274,8 +1274,8 @@ class DA:
     # NOT allowed on parallel process!
     def resubmit_jobs(self, platform:str='htcondor', number_part_per_jobs: int|None=None, number_jobs_max: int|None=None, **kwarg):
         # Retrive results if JobManager already exist
-        self.retrive_jobs(platform)
-        self.resubmit_unfinished()
+        # self.retrive_jobs(platform)
+        # self.resubmit_unfinished()
         if self.meta.da_htcondor_meta.exist():
             # Load JobManager meta file
             jm = JobManager(self.meta.da_htcondor_meta)

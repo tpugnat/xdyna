@@ -59,7 +59,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
         'read_only': False,
         # 'normalised_emittance': None,
     }
-    operands: Dict = {}
+    operands = {'Refresh_particles': False}
 
     if DA_config['study'] in ("-h", "--help"):
         print(USAGE)
@@ -216,18 +216,45 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
                     raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
             continue
 
-        if arg in ("-rp", "--rerun_particles"):
-            operands['Rerun_particles'] = True
+        if arg in ("-rp", "--refresh_particles"):
+            operands['Refresh_particles'] = True
             continue
 
-        if arg in ("-htc","--htcondor","--generate_config_htcondor"):
-            operands['Generate_config_htcondor'] = True
-            if arg not in ("-htc","--htcondor"):
-                continue
+        if arg in ("-sb", "--submit"):
+            platform = arguments.popleft()
+            operands['Submit'] = {'platform':platform, 'auto':True, 'clean':False}
 
-        if arg in ("-htc","--htcondor","--run_config_htcondor"):
-            operands['Run_config_htcondor'] = True
+            while arguments:
+                arg = arguments.popleft()
+
+                if arg == '-auto':
+                    operands['Submit']['auto'] = converte_str_to_int_and_float(arguments.popleft())
+
+                elif arg == '-clean':
+                    operands['Submit']['clean'] = converte_str_to_int_and_float(arguments.popleft())
+
+                elif arg in MAIN_OPERANDS:
+                    arguments.appendleft(arg)
+                    arg = None
+                    break
+
+                elif arguments and arguments[0][0] != '-':
+                    operands['Generate_particles'][arg[1:]] = converte_str_to_int_and_float(arguments.popleft())
+                    arg = None
+                    continue
+
+                else:
+                    raise SystemExit(f'Wrong key format starting from:\n    {arg+" "+" ".join(arguments)}\n\n' + USAGE)
             continue
+
+        # if arg in ("-htc","--htcondor","--generate_config_htcondor"):
+        #     operands['Generate_config_htcondor'] = True
+        #     if arg not in ("-htc","--htcondor"):
+        #         continue
+
+        # if arg in ("-htc","--htcondor","--run_config_htcondor"):
+        #     operands['Run_config_htcondor'] = True
+        #     continue
 
         if arg in ("-t", "--track"):
             operands['Track'] = {'npart':None}
@@ -398,84 +425,98 @@ def generate_particles(da_study: DA, config:dict):
         raise ValueError(f"Type of distribution {type_dist} not implemented. `random`, `radial` or `grid` are allowed")
 
 
-def generate_config_htcondor(da_study: DA):
-    raise NotImplementedError("generate_config_htcondor not implemented yet")
-    path = da_study.meta.path
-    study = da_study.meta.name
+def submit(da_study: DA, config:dict, refresh_particles:bool):
+    platform = config.pop('platform')
+    print(f'   -> Retrive results from previous simulation ({platform})')
+    da_study.retrive_jobs(platform)
+    if refresh_particles:
+        print(f'   -> Refresh particles that were not finished')
+        da_study.resubmit_unfinished()
+    if config.pop('clean'):
+        print(f'   -> Clean the directory for parallel tracking ({platform})')
+        da_study.clean_jobs(platform,**config)
+    if config.pop('auto'):
+        print(f'   -> Submit particles for parallel tracking ({platform})')
+        da_study.resubmit_jobs(platform,**config)
 
-    # Clean the config file if it exists
-    file = Path(path / f"config_htcondor_track_{study}.ini")
-    if file.exists():
-        file.unlink()
+# def generate_config_htcondor(da_study: DA):
+#     raise NotImplementedError("generate_config_htcondor not implemented yet")
+#     path = da_study.meta.path
+#     study = da_study.meta.name
 
-    # Count the number of jobs to run on htcondor
-    import numpy as np
-    list_npart = [200, 500, 1000, 2000, 5000]
-    list_jobflavour = ["workday", "tomorrow", "tomorrow", "testmatch", "nextweek"]
+#     # Clean the config file if it exists
+#     file = Path(path / f"config_htcondor_track_{study}.ini")
+#     if file.exists():
+#         file.unlink()
 
-    # npart = 200
-    # jobflavour = "tomorrow"
-    njobs=-1
-    if da_study.meta.nseeds != 0:
-        mask = ~da_study._surv.finished
-        for npt, jbflvr in zip(list_npart, list_jobflavour):
-            if njobs == -1 or njobs > 500:
-                npart = npt
-                jobflavour = jbflvr
-                njobs = int(sum([np.ceil(sum( mask & (da_study._surv.seed==ss) ) / npart) for ss in range(1,da_study.meta.nseeds+1)]))
-    else:
-        for npt, jbflvr in zip(list_npart, list_jobflavour):
-            if njobs == -1 or njobs > 500:
-                npart = npt
-                jobflavour = jbflvr
-                njobs = int(np.ceil(sum( ~da_study._surv.finished ) / npart))
+#     # Count the number of jobs to run on htcondor
+#     import numpy as np
+#     list_npart = [200, 500, 1000, 2000, 5000]
+#     list_jobflavour = ["workday", "tomorrow", "tomorrow", "testmatch", "nextweek"]
 
-    if njobs != 0:
-        # Create the config file
-        txt = ''
-        txt+= '[DEFAULT]\n'
-        txt+= 'executable="bash"\n'
-        # TODO: Add the path to the mask
-        txt+= 'mask="/afs/cern.ch/work/t/thpugnat/public/DA_study_with_xdyna/mask_track.sh"\n'
-        # txt+=f'mask="{path / "hcondor/mask_track.sh"}"\n'
-        # TODO: Add the path to the working directory
-        txt+= f'working_directory="{path / "hcondor/"}"\n'
-        txt+= '# "espresso", "microcentury", "longlunch", "workday", "tomorrow", "testmatch", "nextweek"\n'
-        txt+= f'jobflavour="{jobflavour}"\n'
-        txt+= 'run_local=False\n'
-        txt+= 'resume_jobs=False\n'
-        txt+= 'append_jobs=False\n'
-        txt+= 'dryrun=False\n'
-        txt+= 'num_processes=8\n'
+#     # npart = 200
+#     # jobflavour = "tomorrow"
+#     njobs=-1
+#     if da_study.meta.nseeds != 0:
+#         mask = ~da_study._surv.finished
+#         for npt, jbflvr in zip(list_npart, list_jobflavour):
+#             if njobs == -1 or njobs > 500:
+#                 npart = npt
+#                 jobflavour = jbflvr
+#                 njobs = int(sum([np.ceil(sum( mask & (da_study._surv.seed==ss) ) / npart) for ss in range(1,da_study.meta.nseeds+1)]))
+#     else:
+#         for npt, jbflvr in zip(list_npart, list_jobflavour):
+#             if njobs == -1 or njobs > 500:
+#                 npart = npt
+#                 jobflavour = jbflvr
+#                 njobs = int(np.ceil(sum( ~da_study._surv.finished ) / npart))
 
-        txt+= 'htc_arguments={"accounting_group":"group_u_BE.ABP.normal","MY.WantOS":"el9","batch_name":"' +str(study)+'"}'
-        ljobs=str([ii for ii in range(njobs)])
-        txt+= "\n\nreplace_dict={ "
-        txt+= f"'ff':['{study}'], "
-        txt+= f"'npart': [{npart}], 'i': {ljobs}" + "}\n"
+#     if njobs != 0:
+#         # Create the config file
+#         txt = ''
+#         txt+= '[DEFAULT]\n'
+#         txt+= 'executable="bash"\n'
+#         # TODO: Add the path to the mask
+#         txt+= 'mask="/afs/cern.ch/work/t/thpugnat/public/DA_study_with_xdyna/mask_track.sh"\n'
+#         # txt+=f'mask="{path / "hcondor/mask_track.sh"}"\n'
+#         # TODO: Add the path to the working directory
+#         txt+= f'working_directory="{path / "hcondor/"}"\n'
+#         txt+= '# "espresso", "microcentury", "longlunch", "workday", "tomorrow", "testmatch", "nextweek"\n'
+#         txt+= f'jobflavour="{jobflavour}"\n'
+#         txt+= 'run_local=False\n'
+#         txt+= 'resume_jobs=False\n'
+#         txt+= 'append_jobs=False\n'
+#         txt+= 'dryrun=False\n'
+#         txt+= 'num_processes=8\n'
 
-        with open(file,'w') as pf:
-            pf.write(txt)
+#         txt+= 'htc_arguments={"accounting_group":"group_u_BE.ABP.normal","MY.WantOS":"el9","batch_name":"' +str(study)+'"}'
+#         ljobs=str([ii for ii in range(njobs)])
+#         txt+= "\n\nreplace_dict={ "
+#         txt+= f"'ff':['{study}'], "
+#         txt+= f"'npart': [{npart}], 'i': {ljobs}" + "}\n"
 
-        print(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
+#         with open(file,'w') as pf:
+#             pf.write(txt)
 
-    # raise NotImplementedError("Status not implemented yet")
+#         print(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
+
+#     # raise NotImplementedError("Status not implemented yet")
 
 
-def run_htcondor(da_study: DA):
-    raise NotImplementedError("run_htcondor not implemented yet")
-    file = Path(da_study.meta.path / f"config_htcondor_track_{da_study.meta.name}.ini")
-    if file.exists():
-        if 'pylhc_submitter' in sys.modules:
-            import os
-            os.system(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
-        else:
-            raise ImportError("Module pylhc_submitter not found")
-    else:
-        raise FileNotFoundError(f"File {file} not found! Be sure to generate the config file first using" +\
-                                " `-htc`,`--htcondor` or `--generate_config_htcondor`")
+# def run_htcondor(da_study: DA):
+#     raise NotImplementedError("run_htcondor not implemented yet")
+#     file = Path(da_study.meta.path / f"config_htcondor_track_{da_study.meta.name}.ini")
+#     if file.exists():
+#         if 'pylhc_submitter' in sys.modules:
+#             import os
+#             os.system(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
+#         else:
+#             raise ImportError("Module pylhc_submitter not found")
+#     else:
+#         raise FileNotFoundError(f"File {file} not found! Be sure to generate the config file first using" +\
+#                                 " `-htc`,`--htcondor` or `--generate_config_htcondor`")
 
-    # raise NotImplementedError("Status not implemented yet")
+#     # raise NotImplementedError("Status not implemented yet")
 
 
 def track(da_study: DA, config:dict):
@@ -513,7 +554,9 @@ def run_da(argv) -> None:
     if  'Generate_particles' in operands:
         generate_particles(da_study, operands['Generate_particles'])
 
-    if 'Rerun_particles' in operands:
+    if 'Submit' in operands:
+        submit(da_study, operands['Submit'], operands['Refresh_particles'])
+    elif operands['Refresh_particles']:
         da_study.resubmit_unfinished()
 
     # if 'Status' in operands:
