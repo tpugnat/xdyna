@@ -1216,7 +1216,7 @@ class DA:
 
 
     # NOT allowed on parallel process!
-    def retrive_jobs(self, platform: str='htcondor', **kwarg):
+    def retrive_jobs(self, platform: str='htcondor', co_search_at: str|None='ip7', **kwarg):
         # Load the Job_Manager
         from xaux.jobmanager import JobManager
         jm = None
@@ -1243,46 +1243,89 @@ class DA:
             if self.line is None:
                 raise ValueError("No line loaded!")
             # Update surv with results
-            for kk,vv in results.items():
-                seed = jm._job_list[kk]['parameter']['seed']
-                # Build tracker(s) if not yet done
-                if self.line[seed].tracker is None:
-                    print(f"Building tracker for seed {seed}.")
-                    self.line[seed].build_tracker()
-                # Get seed and context
-                context = self.line[seed].tracker._buffer.context
-                # Load tracking results
-                with ProtectFile(vv['output_file']['0'], 'rb', wait=_db_access_wait_time,
-                                max_lock_time=_db_max_lock_time) as pf:
-                    part = xp.Particles.from_pandas(pd.read_parquet(pf, engine="pyarrow"), _context=self._context)
-                # Store tracking results
-                part_id   = context.nparray_from_context_array(part.particle_id)
-                sort      = np.argsort(part_id)
-                part_id   = part_id[sort]
-                x_out     = context.nparray_from_context_array(part.x)[sort]
-                y_out     = context.nparray_from_context_array(part.y)[sort]
-                survturns = context.nparray_from_context_array(part.at_turn)[sort]
-                px_out    = context.nparray_from_context_array(part.px)[sort]
-                py_out    = context.nparray_from_context_array(part.py)[sort]
-                zeta_out  = context.nparray_from_context_array(part.zeta)[sort]
-                delta_out = context.nparray_from_context_array(part.delta)[sort]
-                s_out     = context.nparray_from_context_array(part.s)[sort]
-                state     = context.nparray_from_context_array(part.state)[sort]
+            if self.meta.nseeds != 0:
+                for kk,vv in results.items():
+                    seed = jm._job_list[kk]['parameter']['seed']
+                    # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
+                    if co_search_at is not None:
+                        self.line[seed].twiss_default['co_search_at'] = co_search_at
+                    # Build tracker(s) if not yet done
+                    if self.line[seed].tracker is None:
+                        print(f"Building tracker for seed {seed}.")
+                        self.line[seed].build_tracker()
+                    # Get seed and context
+                    context = self.line[seed].tracker._buffer.context
+                    # Load tracking results
+                    with ProtectFile(vv['output_file']['0'], 'rb', wait=_db_access_wait_time,
+                                    max_lock_time=_db_max_lock_time) as pf:
+                        part = xp.Particles.from_pandas(pd.read_parquet(pf, engine="pyarrow"), _context=self._context)
+                    # Store tracking results
+                    part_id   = context.nparray_from_context_array(part.particle_id)
+                    sort      = np.argsort(part_id)
+                    part_id   = part_id[sort]
+                    x_out     = context.nparray_from_context_array(part.x)[sort]
+                    y_out     = context.nparray_from_context_array(part.y)[sort]
+                    survturns = context.nparray_from_context_array(part.at_turn)[sort]
+                    px_out    = context.nparray_from_context_array(part.px)[sort]
+                    py_out    = context.nparray_from_context_array(part.py)[sort]
+                    zeta_out  = context.nparray_from_context_array(part.zeta)[sort]
+                    delta_out = context.nparray_from_context_array(part.delta)[sort]
+                    s_out     = context.nparray_from_context_array(part.s)[sort]
+                    state     = context.nparray_from_context_array(part.state)[sort]
 
-                self._surv.loc[part_id, 'finished'] = True
-                self._surv.loc[part_id, 'x_out'] = x_out
-                self._surv.loc[part_id, 'y_out'] = y_out
-                self._surv.loc[part_id, 'nturns'] = survturns.astype(np.int64)
-                self._surv.loc[part_id, 'px_out'] = px_out
-                self._surv.loc[part_id, 'py_out'] = py_out
-                self._surv.loc[part_id, 'zeta_out'] = zeta_out
-                self._surv.loc[part_id, 'delta_out'] = delta_out
-                self._surv.loc[part_id, 's_out'] = s_out
-                self._surv.loc[part_id, 'state'] = state
+                    self._surv.loc[part_id, 'finished'] = True
+                    self._surv.loc[part_id, 'x_out'] = x_out
+                    self._surv.loc[part_id, 'y_out'] = y_out
+                    self._surv.loc[part_id, 'nturns'] = survturns.astype(np.int64)
+                    self._surv.loc[part_id, 'px_out'] = px_out
+                    self._surv.loc[part_id, 'py_out'] = py_out
+                    self._surv.loc[part_id, 'zeta_out'] = zeta_out
+                    self._surv.loc[part_id, 'delta_out'] = delta_out
+                    self._surv.loc[part_id, 's_out'] = s_out
+                    self._surv.loc[part_id, 'state'] = state
+            else:
+                for kk,vv in results.items():
+                    # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
+                    if co_search_at is not None:
+                        self.line.twiss_default['co_search_at'] = co_search_at
+                    # Build tracker(s) if not yet done
+                    if self.line.tracker is None:
+                        print(f"Building tracker for seed {seed}.")
+                        self.line.build_tracker()
+                    # Get seed and context
+                    context = self.line.tracker._buffer.context
+                    # Load tracking results
+                    with ProtectFile(vv['output_file']['0'], 'rb', wait=_db_access_wait_time,
+                                    max_lock_time=_db_max_lock_time) as pf:
+                        part = xp.Particles.from_pandas(pd.read_parquet(pf, engine="pyarrow"), _context=self._context)
+                    # Store tracking results
+                    part_id   = context.nparray_from_context_array(part.particle_id)
+                    sort      = np.argsort(part_id)
+                    part_id   = part_id[sort]
+                    x_out     = context.nparray_from_context_array(part.x)[sort]
+                    y_out     = context.nparray_from_context_array(part.y)[sort]
+                    survturns = context.nparray_from_context_array(part.at_turn)[sort]
+                    px_out    = context.nparray_from_context_array(part.px)[sort]
+                    py_out    = context.nparray_from_context_array(part.py)[sort]
+                    zeta_out  = context.nparray_from_context_array(part.zeta)[sort]
+                    delta_out = context.nparray_from_context_array(part.delta)[sort]
+                    s_out     = context.nparray_from_context_array(part.s)[sort]
+                    state     = context.nparray_from_context_array(part.state)[sort]
+
+                    self._surv.loc[part_id, 'finished'] = True
+                    self._surv.loc[part_id, 'x_out'] = x_out
+                    self._surv.loc[part_id, 'y_out'] = y_out
+                    self._surv.loc[part_id, 'nturns'] = survturns.astype(np.int64)
+                    self._surv.loc[part_id, 'px_out'] = px_out
+                    self._surv.loc[part_id, 'py_out'] = py_out
+                    self._surv.loc[part_id, 'zeta_out'] = zeta_out
+                    self._surv.loc[part_id, 'delta_out'] = delta_out
+                    self._surv.loc[part_id, 's_out'] = s_out
+                    self._surv.loc[part_id, 'state'] = state
             self.write_surv()
     
     # NOT allowed on parallel process!
-    def resubmit_jobs(self, platform:str='htcondor', npart: int|None=None, njobs: int|None=None, **kwarg):
+    def resubmit_jobs(self, platform:str='htcondor', npart: int|None=None, njobs: int|None=None, co_search_at: str|None='ip7', **kwarg):
         # Load line
         if self.line is None:
             self.load_line_from_file()
@@ -1347,6 +1390,10 @@ class DA:
                     continue
                 all_part_ids_seed = self._surv[mask].index.to_numpy()
                 # Build tracker(s) if not yet done
+
+                # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
+                if co_search_at is not None:
+                    self.line[seed].twiss_default['co_search_at'] = co_search_at
                 if self.line[seed].tracker is None:
                     print(f"Building tracker for seed {seed}.")
                     self.line[seed].build_tracker()
@@ -1381,6 +1428,10 @@ class DA:
                 return
             all_part_ids_seed = self._surv[mask].index.to_numpy()
             # Build tracker(s) if not yet done
+
+            # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
+            if co_search_at is not None:
+                self.line.twiss_default['co_search_at'] = co_search_at
             if self.line.tracker is None:
                 print(f"Building tracker.")
                 self.line.build_tracker()
