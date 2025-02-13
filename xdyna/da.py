@@ -1272,6 +1272,11 @@ class DA:
     
     # NOT allowed on parallel process!
     def resubmit_jobs(self, platform:str='htcondor', npart: int|None=None, njobs: int|None=None, **kwarg):
+        # Load line
+        if self.line is None:
+            self.load_line_from_file()
+        if self.line is None:
+            raise ValueError("No line loaded!")
         # Retrive results if JobManager already exist
         # self.retrive_jobs(platform)
         # self.resubmit_unfinished()
