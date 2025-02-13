@@ -48,7 +48,6 @@ DA.track_job(npart=100)
 ```
 
 ## Command line description
-
 With the latest update,`xdyna` can be run directly from the a Terminal. 
 Those command can handle the basic functions from `xdyna` such as: study creation; line generation/loading; particles generation; job submission to htcondor/boinc; showing the study status; and tracking.
 
@@ -58,7 +57,6 @@ If `<path>` is not specified, `xdyna` will look for meta file in the current dir
 Here are examples of the different functionnalities and a quick description of the associated operand:
 
 ### - Class creation [`-c`, `--create`]:
-
 This option is used for the creation of a new study and can be followed by the element of the class initialisation description as such:
 ```Shell
 python -m xaux.run_da <study> [<path>] -c -nseeds 60 -max_turns 1e5 -emitt 2.5e-6
@@ -73,7 +71,6 @@ python -m xaux.run_da <study> [<path>] -c -default -nseeds 0
 ```
 
 ### - Line creation and loading [`-l`, `--line_settings`]:
-
 This option is used for the creation and/or loading of the line(s).
 It must be followed by either the command for the madx mask file and/or  the line file. 
 If not, the line in memory will be loaded.
@@ -88,7 +85,6 @@ python -m xaux.run_da <study> [<path>] -l --madx_file <madx_file> -sequence lhcb
 ```
 
 ### - Generation of the particle distribution [`-gp`, `--generate_particles`]:
-
 This option is used for the generation of the particle distribution and must be followed by the type: `"radial"`, `"grid"`, or `"random"`.
 The option after correspond to the argument of the respective distribution generator function.
 ```Shell
@@ -103,16 +99,23 @@ python -m xaux.run_da <study> [<path>] -gp radial -default
 python -m xaux.run_da <study> [<path>] -gp radial -default -r_min 10
 ```
 
+### - Allow unfinished particles to be resubmited [`-rp`, `--refresh_particles`]:
+In `xdyna`, each particle as two flags assigned.
+The first one tell if the particle has been submitted to to a tracking procedure.
+The second one tell if the tracking succesfully end. 
+This command is here to reset particles that have been submitted but for whom the tracking was interupted.
+
 ### - Submission to parallel computation [`-sb`, `--submit`]:
 This option is used for the generation of the particle distribution and must be followed by the name of the platform: `"htcondor"` or `"boinc"`.
 Results from finished jobs are automatically loaded when called.
-It is possible to disable or enable the auto jobs submission to the platform using the command `-auto` followed by a boulean. If disable, the line for the submission will be only printed. By default, it is enable.
-Similarly, it is possible to disable or enable the auto cleaning of the platform submission directory using the command `-clean` followed by a boulean. By default, it is disable.
+It is possible to disable or enable the auto jobs submission to the platform using the command `-auto` followed by a boulean. If disable, the line for the submission will be only printed (by default, it is enable).
+Similarly, it is possible to disable or enable the auto cleaning of the platform submission directory using the command `-clean` followed by a boulean (by default, it is disable).
 The option after correspond to the argument of the respective distribution generator function.
 ```Shell
-python -m xaux.run_da <study> [<path>] -sb hcondor
-python -m xaux.run_da <study> [<path>] -sb hcondor -auto False -clean True
+python -m xaux.run_da <study> [<path>] -rp -sb hcondor
+python -m xaux.run_da <study> [<path>] -rp -sb hcondor -auto False -clean True
 ```
+It is recomanded to use this command with the option `-rp` or `--refresh_particles`.
 
 ### - Show the status of the study [`-st`, `--status`]:
 This option will print different information concerning the status of the study such as the number of seed, the number of submitted and finished particles, ongoing simulations on htcondor, ...
