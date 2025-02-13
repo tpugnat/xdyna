@@ -1323,7 +1323,7 @@ class DA:
                 if mask.sum() == 0:
                     continue
                 all_part_ids_seed = self._surv[mask].index.to_numpy()
-                for ii in range(0, np.ceil(len(all_part_ids_seed) / number_jobs_max)):
+                for ii in range(0, int(np.ceil(len(all_part_ids_seed) / number_jobs_max))):
                     part_ids = all_part_ids_seed[ii*number_jobs_max:(ii+1)*number_jobs_max]
                     if len(part_ids) != 0:
                         # Select initial particles
