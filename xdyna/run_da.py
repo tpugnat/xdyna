@@ -55,7 +55,7 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
     DA_config = {
         'study': arguments.popleft(),
         'default_path': Path('./'),
-        'use_files': False,
+        'use_files': True,
         'read_only': False,
         # 'normalised_emittance': None,
     }
