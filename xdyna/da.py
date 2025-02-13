@@ -1238,8 +1238,13 @@ class DA:
             # Update surv with results
             part = xp.Particle()
             for kk,vv in results.items():
+                seed = jm._job_list[kk]['parameter']['seed']
+                # Build tracker(s) if not yet done
+                if self.line[seed].tracker is None:
+                    print(f"Building tracker for seed {seed}.")
+                    self.line[seed].build_tracker()
                 # Get seed and context
-                context = self.line[jm._job_list[kk]['parameter']['seed']].tracker._buffer.context
+                context = self.line[seed].tracker._buffer.context
                 # Load tracking results
                 with ProtectFile(vv['output_file']['0'], 'rb', wait=_db_access_wait_time,
                                 max_lock_time=_db_max_lock_time) as pf:
