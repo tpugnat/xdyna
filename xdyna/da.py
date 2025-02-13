@@ -1315,8 +1315,10 @@ class DA:
             # Create initial particles
             part = line.build_particles(
                                       x_norm=x_norm, y_norm=y_norm, px_norm=px_norm, py_norm=py_norm, zeta=zeta, delta=delta,
-                                      nemitt_x=nemitt_x, nemitt_y=nemitt_y, particle_id=particle_id
+                                      nemitt_x=nemitt_x, nemitt_y=nemitt_y
                                      )
+            part.particle_id = particle_id
+            part.parent_particle_id = particle_id
             return part
         # Prepare particles submission
         if npart is None and njobs is None:
