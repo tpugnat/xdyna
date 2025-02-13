@@ -1271,7 +1271,7 @@ class DA:
             self.write_surv()
     
     # NOT allowed on parallel process!
-    def resubmit_jobs(self, platform:str='htcondor', number_part_per_jobs: int|None=None, number_jobs_max: int|None=None, **kwarg):
+    def resubmit_jobs(self, platform:str='htcondor', npart: int|None=None, njobs: int|None=None, **kwarg):
         # Retrive results if JobManager already exist
         # self.retrive_jobs(platform)
         # self.resubmit_unfinished()
@@ -1303,17 +1303,21 @@ class DA:
                                      )
             return part
         # Prepare particles submission
-        if number_part_per_jobs is None and number_jobs_max is None:
-            raise ValueError("Need to specify only one of 'number_part_per_jobs' or 'number_jobs_max'.")
-        if number_part_per_jobs is not None and number_jobs_max is not None:
-            raise ValueError("Cannot specify both 'number_part_per_jobs' and 'number_jobs_max'.")
-        if number_part_per_jobs is None:
-            number_part_per_jobs = int(np.ceil(len(self._surv[~self._surv.submitted]) / number_jobs_max))
-        if number_jobs_max is None:
-            number_jobs_max = int(np.ceil(len(self._surv[~self._surv.submitted]) / number_part_per_jobs))
+        if npart is None and njobs is None:
+            raise ValueError("Need to specify only one of 'npart' or 'njobs'.")
+        if npart is not None and njobs is not None:
+            raise ValueError("Cannot specify both 'npart' and 'njobs'.")
+        if npart is None:
+            npart = int(np.ceil(sum(~self._surv.submitted) / njobs))
+        if njobs is None:
+            # njobs = int(np.ceil(len(self._surv[~self._surv.submitted]) / npart))
+            if self.meta.nseeds != 0:
+                njobs = int(sum([np.ceil(sum( (~self._surv.finished) &  (self._surv.seed==ss) ) / npart) for ss in range(1,self.meta.nseeds+1)]))
+            else:
+                njobs = int(np.ceil(sum( (~self._surv.finished) ) / npart))
 # <<<<<<<<<<<<<<<<<<<<< DEBUG
-        print(f'number_part_per_jobs: {number_part_per_jobs}')
-        print(f'number_jobs_max: {number_jobs_max}')
+        print(f'npart: {npart}')
+        print(f'njobs: {njobs}')
         print(f'len(self._surv[self._surv.submitted]): {len(self._surv[~self._surv.submitted])}')
 # >>>>>>>>>>>>>>>>>>>>> DEBUG
         select_particles = {}
@@ -1323,8 +1327,8 @@ class DA:
                 if mask.sum() == 0:
                     continue
                 all_part_ids_seed = self._surv[mask].index.to_numpy()
-                for ii in range(0, int(np.ceil(len(all_part_ids_seed) / number_jobs_max))):
-                    part_ids = all_part_ids_seed[ii*number_jobs_max:(ii+1)*number_jobs_max]
+                for ii in range(0, int(np.ceil(len(all_part_ids_seed) / npart))):
+                    part_ids = all_part_ids_seed[ii*npart:(ii+1)*npart]
                     if len(part_ids) != 0:
                         # Select initial particles
                         context = self.line[seed].tracker._buffer.context
@@ -1351,8 +1355,8 @@ class DA:
             if mask.sum() == 0:
                 return
             all_part_ids_seed = self._surv[mask].index.to_numpy()
-            for ii in range(0, np.ceil(len(all_part_ids_seed) / number_jobs_max)):
-                part_ids = all_part_ids_seed[ii*number_jobs_max:(ii+1)*number_jobs_max]
+            for ii in range(0, np.ceil(len(all_part_ids_seed) / npart)):
+                part_ids = all_part_ids_seed[ii*npart:(ii+1)*npart]
                 if len(part_ids) != 0:
                     # Select initial particles
                     context = self.line.tracker._buffer.context
