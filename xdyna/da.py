@@ -1237,6 +1237,12 @@ class DA:
                 raise ValueError("No survival data found!")
             # Update surv with results
             part = xp.Particle()
+            # Load line
+            if self.line is None:
+                self.load_line_from_file()
+            if self.line is None:
+                raise ValueError("No line loaded!")
+            # Update surv with results
             for kk,vv in results.items():
                 seed = jm._job_list[kk]['parameter']['seed']
                 # Build tracker(s) if not yet done
@@ -1333,10 +1339,16 @@ class DA:
         select_particles = {}
         if self.meta.nseeds != 0:
             for seed in range(1, self.meta.nseeds+1):
+                #  Select particules for the job
                 mask = (self._surv.submitted == False) & (self._surv.seed == seed)
                 if mask.sum() == 0:
                     continue
                 all_part_ids_seed = self._surv[mask].index.to_numpy()
+                # Build tracker(s) if not yet done
+                if self.line[seed].tracker is None:
+                    print(f"Building tracker for seed {seed}.")
+                    self.line[seed].build_tracker()
+                # Create the job
                 for ii in range(0, int(np.ceil(len(all_part_ids_seed) / npart))):
                     part_ids = all_part_ids_seed[ii*npart:(ii+1)*npart]
                     if len(part_ids) != 0:
@@ -1361,10 +1373,16 @@ class DA:
                                        'outputfiles':{f'output_file':f'final_particles.parquet'} }
             jm.add(**job_description)
         else:
+            #  Select particules for the job
             mask = (self._surv.submitted == False)
             if mask.sum() == 0:
                 return
             all_part_ids_seed = self._surv[mask].index.to_numpy()
+            # Build tracker(s) if not yet done
+            if self.line.tracker is None:
+                print(f"Building tracker.")
+                self.line.build_tracker()
+            # Create the job
             for ii in range(0, np.ceil(len(all_part_ids_seed) / npart)):
                 part_ids = all_part_ids_seed[ii*npart:(ii+1)*npart]
                 if len(part_ids) != 0:
