@@ -1311,6 +1311,11 @@ class DA:
             number_part_per_jobs = int(np.ceil(len(self._surv[self._surv.submitted]) / number_jobs_max))
         if number_jobs_max is None:
             number_jobs_max = int(np.ceil(len(self._surv[self._surv.submitted]) / number_part_per_jobs))
+# <<<<<<<<<<<<<<<<<<<<< DEBUG
+        print(f'number_part_per_jobs: {number_part_per_jobs}')
+        print(f'number_jobs_max: {number_jobs_max}')
+        print(f'len(self._surv[self._surv.submitted]): {len(self._surv[self._surv.submitted])}')
+# >>>>>>>>>>>>>>>>>>>>> DEBUG
         select_particles = {}
         if self.meta.nseeds != 0:
             for seed in range(1, self.meta.nseeds+1):
