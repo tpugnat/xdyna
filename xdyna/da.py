@@ -1221,7 +1221,7 @@ class DA:
         from xaux.jobmanager import JobManager
         jm = None
         if platform == 'htcondor':
-            if self.meta.da_htcondor_meta.exist():
+            if self.meta.da_htcondor_meta.exists():
                 jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
             else:
                 raise ValueError("No HTCondor meta file found.")
@@ -1276,7 +1276,7 @@ class DA:
         # Retrive results if JobManager already exist
         # self.retrive_jobs(platform)
         # self.resubmit_unfinished()
-        if self.meta.da_htcondor_meta.exist():
+        if self.meta.da_htcondor_meta.exists():
             # Load JobManager meta file
             jm = JobManager(self.meta.da_htcondor_meta)
             jm.job_class = DAJob
@@ -1378,7 +1378,7 @@ class DA:
         from xaux.jobmanager import JobManager
         jm = None
         if platform == 'htcondor':
-            if self.meta.da_htcondor_meta.exist():
+            if self.meta.da_htcondor_meta.exists():
                 jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
             else:
                 raise ValueError("No HTCondor meta file found.")
