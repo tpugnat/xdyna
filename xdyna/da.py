@@ -1285,7 +1285,7 @@ class DA:
             input_directory  = self.meta.path
             output_directory = Path(kwarg.pop('output_directory', self.meta.path / 'output'))
             if not output_directory.exists():
-                output_directory.mkdir()
+                output_directory.mkdir(parents=True)
             # Generate JobManager and import DA jobs routine
             from xaux.jobmanager import JobManager, DAJob
             jm = JobManager(self.meta.name, self.meta.da_htcondor_dir, job_class=DAJob,
