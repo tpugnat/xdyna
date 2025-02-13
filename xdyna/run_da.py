@@ -193,6 +193,8 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
         if arg in ("-gp", "--generate_particles"):
             particle_type = arguments.popleft()
+            if particle_type not in ('random', 'radial', 'grid'):
+                raise SystemExit(f'Particle type {particle_type} not implemented. {arg} must be follow by either `random`, `radial` or `grid`')
             operands['Generate_particles'] = {'type': particle_type}
 
             while arguments:
@@ -222,6 +224,8 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
         if arg in ("-sb", "--submit"):
             platform = arguments.popleft()
+            if platform not in ('htcondor', 'boinc'):
+                raise SystemExit(f'Platform {platform} not implemented yet. {arg} must be follow by either `htcondor` or `boinc`')
             operands['Submit'] = {'platform':platform, 'auto':True, 'clean':False}
 
             while arguments:
