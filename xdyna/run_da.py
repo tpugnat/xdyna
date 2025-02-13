@@ -435,9 +435,8 @@ def submit(da_study: DA, config:dict, refresh_particles:bool):
     if config.pop('clean'):
         print(f'   -> Clean the directory for parallel tracking ({platform})')
         da_study.clean_jobs(platform,**config)
-    if config.pop('auto'):
-        print(f'   -> Submit particles for parallel tracking ({platform})')
-        da_study.resubmit_jobs(platform,**config)
+    print(f'   -> Submit particles for parallel tracking ({platform})')
+    da_study.resubmit_jobs(platform,**config)
 
 # def generate_config_htcondor(da_study: DA):
 #     raise NotImplementedError("generate_config_htcondor not implemented yet")
