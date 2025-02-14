@@ -284,11 +284,11 @@ class _DAMetaData:
 
     @property
     def da_htcondor_dir(self):
-        return Path(self.path, 'htcondor').resolve() if self._use_files else None
+        return Path(self.path, 'htcondor').resolve()
 
     @property
     def da_htcondor_meta(self):
-        return Path(self.path, 'htcondor', self.name  + '.meta.json').resolve() if self._use_files else None
+        return Path(self.path, 'htcondor', self.name  + '.jobmanager.meta.json').resolve()
 
     @property
     def db_extension(self):

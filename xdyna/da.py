@@ -1347,7 +1347,8 @@ class DA:
                 output_directory.mkdir(parents=True)
             # Generate JobManager and import DA jobs routine
             from xaux.jobmanager import JobManager, DAJob
-            jm = JobManager(self.meta.name, self.meta.da_htcondor_dir, job_class=DAJob,
+            print(f"Creating JobManager for {self.meta.name} in {self.meta.da_htcondor_dir}.")
+            jm = JobManager(name=self.meta.name, work_directory=self.meta.da_htcondor_dir, job_class=DAJob,
                             input_directory=input_directory, output_directory=output_directory)
         # Define the function for particle generation:
         def set_particles_per_seed(context, line, x_norm, y_norm, px_norm, py_norm, zeta, delta, nemitt_x, nemitt_y, particle_id):
