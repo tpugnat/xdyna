@@ -1245,7 +1245,7 @@ class DA:
             # Update surv with results
             if self.meta.nseeds != 0:
                 for kk,vv in results.items():
-                    seed = jm._job_list[kk]['parameter']['seed']
+                    seed = jm._job_list[kk]['parameters']['seed']
                     # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
                     if co_search_at is not None:
                         self.line[seed].twiss_default['co_search_at'] = co_search_at
@@ -1381,7 +1381,8 @@ class DA:
         print(f'njobs: {njobs}')
         print(f'len(self._surv[self._surv.submitted]): {len(self._surv[~self._surv.submitted])}')
 # >>>>>>>>>>>>>>>>>>>>> DEBUG
-        select_particles = {}
+        # select_particles = {}
+        job_description = {}
         if self.meta.nseeds != 0:
             for seed in range(1, self.meta.nseeds+1):
                 #  Select particules for the job
@@ -1390,7 +1391,6 @@ class DA:
                     continue
                 all_part_ids_seed = self._surv[mask].index.to_numpy()
                 # Build tracker(s) if not yet done
-
                 # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
                 if co_search_at is not None:
                     self.line[seed].twiss_default['co_search_at'] = co_search_at
@@ -1413,14 +1413,18 @@ class DA:
                         part = set_particles_per_seed(context, self.line[seed],
                                                     x_norm, y_norm, px_norm, py_norm, zeta, delta,
                                                     self.nemitt_x, self.nemitt_y, part_ids)
-                        select_particles[f'seed{seed}-{ii}'] = [seed,part]
-            job_description = {}
-            for kk,vv in select_particles.items():
-                job_description[kk] = {'inputfiles':{'line':self.meta.line_file},
-                                       'particles':vv[1],
-                                       'parameter':{'num_turns':self.meta.max_turns, 'seed':vv[0]},
-                                       'outputfiles':{f'output_file':f'final_particles.parquet'} }
-            jm.add(**job_description)
+                        job_description[f'seed{seed}-{ii}'] = {
+                            'inputfiles':{'line':self.meta.line_file},
+                            'particles':part,
+                            'parameters':{'num_turns':self.meta.max_turns, 'seed':seed},
+                            'outputfiles':{f'output_file':f'final_particles.parquet'}
+                        }
+            #             select_particles[f'seed{seed}-{ii}'] = [seed,part]
+            # for kk,vv in select_particles.items():
+            #     job_description[kk] = {'inputfiles':{'line':self.meta.line_file},
+            #                            'particles':vv[1],
+            #                            'parameters':{'num_turns':self.meta.max_turns, 'seed':vv[0]},
+            #                            'outputfiles':{f'output_file':f'final_particles.parquet'}}
         else:
             #  Select particules for the job
             mask = (self._surv.submitted == False)
@@ -1428,7 +1432,6 @@ class DA:
                 return
             all_part_ids_seed = self._surv[mask].index.to_numpy()
             # Build tracker(s) if not yet done
-
             # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
             if co_search_at is not None:
                 self.line.twiss_default['co_search_at'] = co_search_at
@@ -1451,14 +1454,24 @@ class DA:
                     part = set_particles_per_seed(context, self.line,
                                                     x_norm, y_norm, px_norm, py_norm, zeta, delta,
                                                     self.nemitt_x, self.nemitt_y, part_ids)
-                    select_particles[f'{ii}'] = part
-            job_description = {}
-            for kk,vv in select_particles.items():
-                job_description[kk] = {'inputfiles':{'line':self.meta.line_file},
-                                       'particles':vv[1],
-                                       'parameter':{'num_turns':self.meta.max_turns},
-                                       'outputfiles':{f'output_file':f'final_particles.parquet'} }
-            jm.add(**job_description)
+                    job_description[f'seed{seed}-{ii}'] = {
+                        'inputfiles':{'line':self.meta.line_file},
+                        'particles':part,
+                        'parameters':{'num_turns':self.meta.max_turns},
+                        'outputfiles':{f'output_file':f'final_particles.parquet'}
+                    }
+                    # select_particles[f'{ii}'] = part
+            # job_description = {}
+            # for kk,vv in select_particles.items():
+            #     job_description[kk] = {'inputfiles':{'line':self.meta.line_file},
+            #                            'particles':vv[1],
+            #                            'parameter':{'num_turns':self.meta.max_turns},
+            #                            'outputfiles':{f'output_file':f'final_particles.parquet'} }
+        
+        if co_search_at is not None:
+            for kk in job_description.keys():
+                job_description[kk]['parameters']['co_search_at'] = co_search_at
+        jm.add(**job_description)
         jm.submit(platform=platform, **kwarg)
 
     # NOT allowed on parallel process!
