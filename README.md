@@ -116,6 +116,12 @@ python -m xaux.run_da <study> [<path>] -rp -sb hcondor
 python -m xaux.run_da <study> [<path>] -rp -sb hcondor -auto False -clean True
 ```
 It is recomanded to use this command with the option `-rp` or `--refresh_particles`.
+A fast command can be called using the command `-default`.
+Any added command based on the distribution generator description will overwrite the default settings.
+```Shell
+python -m xaux.run_da <study> [<path>] -rp -sb hcondor - default -auto False -clean True -JobFlavor longlunch
+```
+
 
 ### - Show the status of the study [`-st`, `--status`]:
 This option will print different information concerning the status of the study such as the number of seed, the number of submitted and finished particles, ongoing simulations on htcondor, ...

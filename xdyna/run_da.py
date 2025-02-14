@@ -28,6 +28,12 @@ DEFAULT_GENERATE_PARTICLES_PARAMETERS = {
     'random': {},
 }
 
+
+DEFAULT_SUBMIT_PARAMETERS = {
+    'htcondor':{'npart': 500, 'JobFlavor': 'workday', 'accounting_group': 'group_u_ATS.all'},
+    'boinc':{},
+}
+
 DEFAULT_CREATE_PARAMETERS = {'nseeds':60, 'max_turns':1e5, 'emitt': 2.5e-6}
 
 # =================================================================================================
@@ -230,8 +236,12 @@ def parse(args: List[str]) -> Tuple[str, Path, Dict]:
 
             while arguments:
                 arg = arguments.popleft()
+                
+                if arg == '-default':
+                    diff_operands = {kk:vv for kk,vv in DEFAULT_SUBMIT_PARAMETERS[platform].items() if kk not in operands['Submit']}
+                    operands['Submit'] = {**operands['Submit'], **diff_operands}
 
-                if arg == '-auto':
+                elif arg == '-auto':
                     operands['Submit']['auto'] = converte_str_to_int_and_float(arguments.popleft())
 
                 elif arg == '-clean':
