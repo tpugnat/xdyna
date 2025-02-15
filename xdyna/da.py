@@ -1223,7 +1223,7 @@ class DA:
         if platform == 'htcondor':
             if not self.meta.da_htcondor_meta.exists():
                 return
-            jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
+            jm = JobManager(self.meta.da_htcondor_meta)
         elif platform == 'boinc':
             raise NotImplementedError("BOINC not yet implemented.")
         else:
@@ -1342,7 +1342,7 @@ class DA:
         else:
             # Set JobManager environment path
             input_directory  = self.meta.path
-            output_directory = Path(kwarg.pop('output_directory', self.meta.path / 'output'))
+            output_directory = Path(kwarg.pop('output_directory', self.meta.path / 'htcondor' / 'output'))
             if not output_directory.exists():
                 output_directory.mkdir(parents=True)
             # Generate JobManager and import DA jobs routine
@@ -1482,7 +1482,7 @@ class DA:
         jm = None
         if platform == 'htcondor':
             if self.meta.da_htcondor_meta.exists():
-                jm = JobManager.from_htcondor(self.meta.da_htcondor_meta)
+                jm = JobManager(self.meta.da_htcondor_meta)
         elif platform == 'boinc':
             raise NotImplementedError("BOINC not yet implemented.")
         else:
