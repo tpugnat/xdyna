@@ -1377,11 +1377,11 @@ class DA:
                 njobs = int(sum([np.ceil(sum( (~self._surv.finished) &  (self._surv.seed==ss) ) / npart) for ss in range(1,self.meta.nseeds+1)]))
             else:
                 njobs = int(np.ceil(sum( (~self._surv.finished) ) / npart))
-# <<<<<<<<<<<<<<<<<<<<< DEBUG
-        print(f'npart: {npart}')
-        print(f'njobs: {njobs}')
-        print(f'len(self._surv[self._surv.submitted]): {len(self._surv[~self._surv.submitted])}')
-# >>>>>>>>>>>>>>>>>>>>> DEBUG
+# # <<<<<<<<<<<<<<<<<<<<< DEBUG
+#         print(f'npart: {npart}')
+#         print(f'njobs: {njobs}')
+#         print(f'len(self._surv[self._surv.submitted]): {len(self._surv[~self._surv.submitted])}')
+# # >>>>>>>>>>>>>>>>>>>>> DEBUG
         # select_particles = {}
         job_description = {}
         if self.meta.nseeds != 0:
@@ -1415,10 +1415,9 @@ class DA:
                                                     x_norm, y_norm, px_norm, py_norm, zeta, delta,
                                                     self.nemitt_x, self.nemitt_y, part_ids)
                         job_description[f'seed{seed}-{ii}'] = {
-                            'inputfiles':{'line':self.meta.line_file},
-                            'particles':part,
+                            'inputfiles':{'line':self.meta.line_file, 'particles':part},
                             'parameters':{'num_turns':self.meta.max_turns, 'seed':seed},
-                            'outputfiles':{f'output_file':f'final_particles.parquet'}
+                            'outputfiles':{'output_file':f'final_particles.parquet'}
                         }
             #             select_particles[f'seed{seed}-{ii}'] = [seed,part]
             # for kk,vv in select_particles.items():
