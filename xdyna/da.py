@@ -1218,7 +1218,7 @@ class DA:
     # NOT allowed on parallel process!
     def retrive_jobs(self, platform: str='htcondor', co_search_at: str|None='ip7', **kwarg):
         # Load the Job_Manager
-        from xaux.jobmanager import JobManager
+        from xaux import JobManager
         jm = None
         if platform == 'htcondor':
             if not self.meta.da_htcondor_meta.exists():
@@ -1236,7 +1236,7 @@ class DA:
             if self._surv is None:
                 raise ValueError("No survival data found!")
             # Update surv with results
-            part = xp.Particle()
+            part = xp.Particles()
             # Load line
             if self.line is None:
                 self.load_line_from_file()
@@ -1346,7 +1346,7 @@ class DA:
             if not output_directory.exists():
                 output_directory.mkdir(parents=True)
             # Generate JobManager and import DA jobs routine
-            from xaux.jobmanager import JobManager, DAJob
+            from xaux import JobManager, DAJob
             print(f"Creating JobManager for {self.meta.name} in {self.meta.da_htcondor_dir}.")
             jm = JobManager(name=self.meta.name, work_directory=self.meta.da_htcondor_dir, job_class=DAJob,
                             input_directory=input_directory, output_directory=output_directory)
@@ -1477,7 +1477,7 @@ class DA:
     # NOT allowed on parallel process!
     def clean_jobs(self, platform:str='htcondor', **kwarg):
         # Load the Job_Manager
-        from xaux.jobmanager import JobManager
+        from xaux import JobManager
         jm = None
         if platform == 'htcondor':
             if self.meta.da_htcondor_meta.exists():
