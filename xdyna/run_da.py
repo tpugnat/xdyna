@@ -19,8 +19,8 @@ USAGE = (f"Usage: {sys.argv[0]} "
 
 
 MAIN_OPERANDS = ["-p", "--path", "-c", "--create", "-s", "--status", "-gp", "--generate_particles", 
-                 "-rp", "--rerun_particles", "-t", "--track", "-htc", "--htcondor", "-l", "--line_settings",
-                 "--generate_config_htcondor", "--run_config_htcondor", "--use_files", "--read_only"]   
+                 "-rp", "--rerun_particles", "-t", "--track", "-sb", "--submit", "-l", "--line_settings",
+                 "-st", "--status", "--run_config_htcondor", "--use_files", "--read_only"]   
 
 DEFAULT_GENERATE_PARTICLES_PARAMETERS = {
     'radial': {'angles': 11, 'r_min': 6, 'r_max': 20, 'delta':0.00027, 'pairs_shift':1e-7, 'pairs_shift_var':'x'},
