@@ -1336,6 +1336,7 @@ class DA:
         # self.resubmit_unfinished()
         if self.meta.da_htcondor_meta.exists():
             # Load JobManager meta file
+            from xaux import JobManager, DAJob
             jm = JobManager(self.meta.da_htcondor_meta)
             jm.job_class = DAJob
             jm.save_metadata()
