@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from xaux import Path
+from pathlib import Path
 import matplotlib.pyplot as plt
 
 from typing import Union
