@@ -28,7 +28,6 @@ DEFAULT_GENERATE_PARTICLES_PARAMETERS = {
     'random': {},
 }
 
-
 DEFAULT_SUBMIT_PARAMETERS = {
     'htcondor':{'npart': 500, 'JobFlavor': 'workday', 'accounting_group': 'group_u_ATS.all'},
     'boinc':{},
@@ -572,8 +571,8 @@ def run_da(argv) -> None:
     elif operands['Refresh_particles']:
         da_study.resubmit_unfinished()
 
-    # if 'Status' in operands:
-    #     status(da_study)
+    if 'Status' in operands:
+        status(da_study)
 
     # if 'Generate_config_htcondor' in operands:
     #     generate_config_htcondor(da_study)
@@ -581,8 +580,8 @@ def run_da(argv) -> None:
     # if 'Run_config_htcondor' in operands:
     #     run_htcondor(da_study)  
 
-    # if 'Track' in operands:
-    #     track(da_study, operands['Track'])
+    if 'Track' in operands:
+        track(da_study, operands['Track'])
 # =================================================================================================
 
 

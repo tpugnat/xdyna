@@ -1,7 +1,10 @@
 import numpy as np
+import pandas as pd
+from xaux import Path
 import matplotlib.pyplot as plt
-from .postprocess_tools import fit_DA
+
 from typing import Union
+from .postprocess_tools import fit_DA
 
 
 def plot_particles(DA, *arg, ax=None, at_turn: Union[int,None]=None, seed: Union[int,None]=None, status: str="All", type_plot: str="polar",
@@ -562,3 +565,66 @@ def plot_davsturns_extremum(DA, ax=None, from_turn: int=1000, to_turn: Union[int
     ax.set_xlabel(r'Turns')
     ax.set_ylabel(r'Amplitude [$\sigma$]')
     return ax
+
+
+# TODO: Change format to reflect other functions
+def _load_da_projection_data(lstudies:list, path:Path|str='./', extra_name:str='', nseed:int=60):
+    DAmin = [None for _ in range(len(lstudies))]
+    DAavg = [None for _ in range(len(lstudies))]
+    DAmax = [None for _ in range(len(lstudies))]
+
+    DAseeds= pd.DataFrame([],index=range(len(lstudies)),columns=range(1,nseed+1))
+
+    for ii in range(len(lstudies)):
+        study = lstudies[ii] + extra_name
+        from .loading_management import load_data
+        DA = load_data(study,Path(path, study))
+        DA.calculate_da()
+
+        DAmin[ii], DAavg[ii], DAmax[ii], DAseeds_std = DA.da_projection()
+        DAseeds.loc[ii,DAseeds_std.seed] = DAseeds_std.DA.values
+    return DAmin, DAavg, DAmax, DAseeds
+
+def plot_da_multiple_study(ax, lstudies:list, x:list|None=None, marker:str|None='o', 
+                           xlab:list|pd.DataFrame|None=None, xrowlab:list|None=None,
+                           path:Path|str='./', extra_name:str='', nseed:int=60, table_scale:list=(1,1.5),
+                           table_fontsize:int=20, **kwarg):
+    DAmin, DAavg, DAmax, DAseeds = _load_da_projection_data(lstudies, path, extra_name, nseed)
+    label = kwarg.pop('label','')
+    alpha = kwarg.pop('alpha',1)
+    
+    if x is None:
+        x=list(range(len(lstudies)))
+    ax.plot(x,DAmin, ls='--',lw=1.5, marker=marker, **kwarg)
+    ax.plot(x,DAavg, ls='-', lw=1.5, marker=marker, label=label, **kwarg)
+    ax.plot(x,DAmax, ls='--',lw=1.5, marker=marker, **kwarg)
+
+    ax.fill_between(x,DAmin,DAmax, alpha=alpha*0.1, **kwarg)
+
+    for ss in DAseeds.columns:
+        ax.plot(x,DAseeds.loc[:,ss],'-', alpha=alpha*0.1, **kwarg)
+
+    ax.set_ylabel(r'DA [$\sigma$]')
+    ax.set_xlim([min(x)-0.5,max(x)+0.5])
+
+    if xlab is not None:
+        if isinstance(xlab,list) and xrowlab is None:
+            raise ValueError("If xlab is a list, please provide also xrowlab")
+        if isinstance(xlab,pd.DataFrame):
+            if xrowlab is None:
+                xrowlab = list(xlab.index)
+            xlab = xlab.values
+            
+        ax.tick_params(axis='x', colors='white', labelsize=0.2)
+        tbl=ax.table(cellText=np.array(xlab),
+                        rowLabels=xrowlab,
+                        cellLoc='center',
+                        rowLoc='center',
+                        loc='bottom',
+                        edges='open', 
+        #                    colWidths=[.5]*2,
+        )
+        tbl.auto_set_font_size(False)
+        tbl.set_fontsize(table_fontsize)
+        tbl.scale(table_scale[0],table_scale[1])
+        return tbl

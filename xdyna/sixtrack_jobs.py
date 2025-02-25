@@ -11,8 +11,8 @@ import xpart as xp
 import xobjects as xo
 import sixtracktools as st
 
-from da_meta import _DAMetaData
-from da import descend, _calculate_radial_evo
+from .da_meta import _DAMetaData
+from .da import descend, _calculate_radial_evo
 from xaux import ProtectFile
 
 
