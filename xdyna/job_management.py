@@ -43,6 +43,7 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
         raise NotImplementedError("BOINC not yet implemented.")
     else:
         raise ValueError(f"Platform '{platform}' not supported.")
+    jm.status(platform=platform, verbose=False)
     if jm is not None:
         results = jm.retrieve(platform=platform)
         # Load surv if not already loaded
