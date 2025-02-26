@@ -60,7 +60,7 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
         # Update surv with results
         if dastudy.meta.nseeds != 0:
             for kk,vv in results.items():
-                seed = jm._job_list[kk]['parameters']['seed']
+                seed = jm._job_list[kk][0]['parameters']['seed']
                 # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
                 if co_search_at is not None:
                     dastudy.line[seed].twiss_default['co_search_at'] = co_search_at
