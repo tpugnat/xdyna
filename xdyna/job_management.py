@@ -10,6 +10,26 @@ from .da_meta import _db_access_wait_time, _db_max_lock_time
 
 
 
+
+
+# NOT allowed on parallel process!
+def jobs_status(dastudy:DA, platform:str='htcondor', **kwarg):
+    # Load the Job_Manager
+    from xaux import JobManager
+    jm = None
+    if platform == 'htcondor':
+        if dastudy.meta.da_htcondor_meta.exists():
+            jm = JobManager(dastudy.meta.da_htcondor_meta)
+        else:
+            print(f"No JobManager found for {dastudy.meta.name}.")
+    elif platform == 'boinc':
+        raise NotImplementedError("BOINC not yet implemented.")
+    else:
+        raise ValueError(f"Platform '{platform}' not supported.")
+    if jm is not None:
+        jm.status(platform=platform, **kwarg)
+
+
 # NOT allowed on parallel process!
 def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='ip7', **kwarg):
     # Load the Job_Manager

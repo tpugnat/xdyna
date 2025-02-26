@@ -7,7 +7,7 @@ from typing  import Dict, List, Tuple
 # print("PYTHONPATH:", sys.path)
 
 from .da import DA
-from .job_management import jobs_retrive, jobs_resubmit, jobs_clean
+from .job_management import jobs_retrive, jobs_resubmit, jobs_clean, jobs_status
 
 
 USAGE = (f"Usage: {sys.argv[0]} "
@@ -447,84 +447,7 @@ def submit(da_study: DA, config:dict, refresh_particles:bool):
     print(f'   -> Submit particles for parallel tracking ({platform})')
     jobs_resubmit(da_study,platform,**config)
 
-# def generate_config_htcondor(da_study: DA):
-#     raise NotImplementedError("generate_config_htcondor not implemented yet")
-#     path = da_study.meta.path
-#     study = da_study.meta.name
 
-#     # Clean the config file if it exists
-#     file = Path(path / f"config_htcondor_track_{study}.ini")
-#     if file.exists():
-#         file.unlink()
-
-#     # Count the number of jobs to run on htcondor
-#     import numpy as np
-#     list_npart = [200, 500, 1000, 2000, 5000]
-#     list_jobflavour = ["workday", "tomorrow", "tomorrow", "testmatch", "nextweek"]
-
-#     # npart = 200
-#     # jobflavour = "tomorrow"
-#     njobs=-1
-#     if da_study.meta.nseeds != 0:
-#         mask = ~da_study._surv.finished
-#         for npt, jbflvr in zip(list_npart, list_jobflavour):
-#             if njobs == -1 or njobs > 500:
-#                 npart = npt
-#                 jobflavour = jbflvr
-#                 njobs = int(sum([np.ceil(sum( mask & (da_study._surv.seed==ss) ) / npart) for ss in range(1,da_study.meta.nseeds+1)]))
-#     else:
-#         for npt, jbflvr in zip(list_npart, list_jobflavour):
-#             if njobs == -1 or njobs > 500:
-#                 npart = npt
-#                 jobflavour = jbflvr
-#                 njobs = int(np.ceil(sum( ~da_study._surv.finished ) / npart))
-
-#     if njobs != 0:
-#         # Create the config file
-#         txt = ''
-#         txt+= '[DEFAULT]\n'
-#         txt+= 'executable="bash"\n'
-#         # TODO: Add the path to the mask
-#         txt+= 'mask="/afs/cern.ch/work/t/thpugnat/public/DA_study_with_xdyna/mask_track.sh"\n'
-#         # txt+=f'mask="{path / "hcondor/mask_track.sh"}"\n'
-#         # TODO: Add the path to the working directory
-#         txt+= f'working_directory="{path / "hcondor/"}"\n'
-#         txt+= '# "espresso", "microcentury", "longlunch", "workday", "tomorrow", "testmatch", "nextweek"\n'
-#         txt+= f'jobflavour="{jobflavour}"\n'
-#         txt+= 'run_local=False\n'
-#         txt+= 'resume_jobs=False\n'
-#         txt+= 'append_jobs=False\n'
-#         txt+= 'dryrun=False\n'
-#         txt+= 'num_processes=8\n'
-
-#         txt+= 'htc_arguments={"accounting_group":"group_u_BE.ABP.normal","MY.WantOS":"el9","batch_name":"' +str(study)+'"}'
-#         ljobs=str([ii for ii in range(njobs)])
-#         txt+= "\n\nreplace_dict={ "
-#         txt+= f"'ff':['{study}'], "
-#         txt+= f"'npart': [{npart}], 'i': {ljobs}" + "}\n"
-
-#         with open(file,'w') as pf:
-#             pf.write(txt)
-
-#         print(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
-
-#     # raise NotImplementedError("Status not implemented yet")
-
-
-# def run_htcondor(da_study: DA):
-#     raise NotImplementedError("run_htcondor not implemented yet")
-#     file = Path(da_study.meta.path / f"config_htcondor_track_{da_study.meta.name}.ini")
-#     if file.exists():
-#         if 'pylhc_submitter' in sys.modules:
-#             import os
-#             os.system(f"python -m pylhc_submitter.job_submitter --entry_cfg {file}")
-#         else:
-#             raise ImportError("Module pylhc_submitter not found")
-#     else:
-#         raise FileNotFoundError(f"File {file} not found! Be sure to generate the config file first using" +\
-#                                 " `-htc`,`--htcondor` or `--generate_config_htcondor`")
-
-#     # raise NotImplementedError("Status not implemented yet")
 
 
 def track(da_study: DA, config:dict):
@@ -532,8 +455,9 @@ def track(da_study: DA, config:dict):
 
 
 def status(da_study: DA):
-    raise NotImplementedError("Status not implemented yet")
-    da_study.status()
+    jobs_status(da_study)
+    # raise NotImplementedError("Status not implemented yet")
+    # da_study.status()
 # =================================================================================================
 
 
