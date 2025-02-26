@@ -99,6 +99,13 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 dastudy._surv.loc[part_id, 'delta_out'] = delta_out
                 dastudy._surv.loc[part_id, 's_out'] = s_out
                 dastudy._surv.loc[part_id, 'state'] = state
+
+            # Clean directory
+            for vv in results[kk]['output_file']:
+                vv_all_files = Path(vv).parent.glob('*')
+                for vvv in vv_all_files:
+                    vvv.unlink()
+
         else:
             for kk,vv in results.items():
                 # Sometimes the CO is hard to find. Changing the starting point can help and it does not change anything for the tracking!
@@ -138,6 +145,12 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 dastudy._surv.loc[part_id, 'delta_out'] = delta_out
                 dastudy._surv.loc[part_id, 's_out'] = s_out
                 dastudy._surv.loc[part_id, 'state'] = state
+
+            # Clean directory
+            for vv in results[kk]['output_file']:
+                vv_all_files = Path(vv).parent.glob('*')
+                for vvv in vv_all_files:
+                    vvv.unlink()
         dastudy.write_surv()
 
 # NOT allowed on parallel process!
