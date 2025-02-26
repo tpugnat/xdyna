@@ -1217,8 +1217,9 @@ class DA:
         if self.surv_exists():
             with ProtectFile(self.meta.surv_file, 'r+b', wait=_db_access_wait_time) as pf:
                 self.read_surv(pf)
-                mask = self._surv['finished'] == False
-                self._surv.loc[mask, 'submitted'] = False
+                # mask = self._surv['finished'] == False
+                # self._surv.loc[mask, 'submitted'] = False
+                self._surv['submitted'] = self._surv['finished']
                 self.write_surv(pf)
         else:
             print("No survival file found! Nothing done.")
