@@ -100,11 +100,11 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 dastudy._surv.loc[part_id, 's_out'] = s_out
                 dastudy._surv.loc[part_id, 'state'] = state
                 # Clean outputs
-                all_files_to_be_removed = jm.job.glob('*')
+                all_files_to_be_removed = vv['output_file'][0].parent.glob('*')
                 for vvv in all_files_to_be_removed:
                     vvv.unlink()
                 # Clean input in jm.job_specific_input_directory
-                all_files_to_be_removed = Path(jm.job_specific_input_directory / f"{jm._name}.{kk}.*").parent.glob('*')
+                all_files_to_be_removed = (jm.job_specific_input_directory).glob(f"{jm._name}.{kk}.*")
                 for vvv in all_files_to_be_removed:
                     vvv.unlink()
                 jm._job_list[kk][3] = True # Mark job as finished
@@ -149,11 +149,11 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 dastudy._surv.loc[part_id, 's_out'] = s_out
                 dastudy._surv.loc[part_id, 'state'] = state
                 # Clean outputs
-                all_files_to_be_removed = jm.job.glob('*')
+                all_files_to_be_removed = vv['output_file'][0].parent.glob('*')
                 for vvv in all_files_to_be_removed:
                     vvv.unlink()
                 # Clean input in jm.job_specific_input_directory
-                all_files_to_be_removed = Path(jm.job_specific_input_directory / f"{jm._name}.{kk}.*").parent.glob('*')
+                all_files_to_be_removed = (jm.job_specific_input_directory).glob(f"{jm._name}.{kk}.*")
                 for vvv in all_files_to_be_removed:
                     vvv.unlink()
                 jm._job_list[kk][3] = True # Mark job as finished
