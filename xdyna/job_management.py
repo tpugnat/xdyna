@@ -71,10 +71,6 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 # Get seed and context
                 context = dastudy.line[seed].tracker._buffer.context
                 # Load tracking results
-# DEBUG <<<<<<<<<<<<<<<<<<<<<<<<<
-                print(f"{vv=}")
-                print(f"{vv['output_file']=}")
-# DEBUG <<<<<<<<<<<<<<<<<<<<<<<<<
                 with ProtectFile(vv['output_file'][0], 'rb', wait=_db_access_wait_time,
                                 max_lock_time=_db_max_lock_time) as pf:
                     part = xp.Particles.from_pandas(pd.read_parquet(pf, engine="pyarrow"), _context=context)
