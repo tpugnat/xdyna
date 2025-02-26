@@ -6,12 +6,8 @@ from typing  import Dict, List, Tuple
 
 # print("PYTHONPATH:", sys.path)
 
-# import xtrack
-# import xpart
 from .da import DA
-# from xdyna.da import DA
-# from .da_meta import _DAMetaData
-# DA = int
+from .job_management import jobs_retrive, jobs_resubmit, jobs_clean
 
 
 USAGE = (f"Usage: {sys.argv[0]} "
@@ -441,15 +437,15 @@ def generate_particles(da_study: DA, config:dict):
 def submit(da_study: DA, config:dict, refresh_particles:bool):
     platform = config.pop('platform')
     print(f'   -> Retrive results from previous simulation ({platform})')
-    da_study.retrive_jobs(platform)
+    jobs_retrive(da_study,platform)
     if refresh_particles:
         print(f'   -> Refresh particles that were not finished')
         da_study.resubmit_unfinished()
     if config.pop('clean'):
         print(f'   -> Clean the directory for parallel tracking ({platform})')
-        da_study.clean_jobs(platform,**config)
+        jobs_clean(da_study,platform,**config)
     print(f'   -> Submit particles for parallel tracking ({platform})')
-    da_study.resubmit_jobs(platform,**config)
+    jobs_resubmit(da_study,platform,**config)
 
 # def generate_config_htcondor(da_study: DA):
 #     raise NotImplementedError("generate_config_htcondor not implemented yet")
