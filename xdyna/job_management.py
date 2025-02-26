@@ -162,14 +162,6 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
 
 # NOT allowed on parallel process!
 def jobs_resubmit(dastudy:DA, platform:str='htcondor', npart: int|None=None, njobs: int|None=None, co_search_at: str|None='ip7', **kwarg):
-    # Load line
-    if dastudy.line is None:
-        dastudy.load_line_from_file()
-    if dastudy.line is None:
-        raise ValueError("No line loaded!")
-    # Retrive results if JobManager already exist
-    # dastudy.retrive_jobs(platform)
-    # dastudy.resubmit_unfinished()
     if dastudy.meta.da_htcondor_meta.exists():
         # Load JobManager meta file
         from xaux import JobManager, DAJob
@@ -192,6 +184,11 @@ def jobs_resubmit(dastudy:DA, platform:str='htcondor', npart: int|None=None, njo
         print(f"Creating JobManager for {dastudy.meta.name} in {dastudy.meta.da_htcondor_dir}.")
         jm = JobManager(name=dastudy.meta.name, work_directory=dastudy.meta.da_htcondor_dir, job_class=DAJob,
                         input_directory=input_directory, output_directory=output_directory)
+    # Load line
+    if dastudy.line is None:
+        dastudy.load_line_from_file()
+    if dastudy.line is None:
+        raise ValueError("No line loaded!")
     # Define the function for particle generation:
     def set_particles_per_seed(context, line, x_norm, y_norm, px_norm, py_norm, zeta, delta, nemitt_x, nemitt_y, particle_id):
         # # openmp context and radiation do not play nicely together, so temp. switch to single thread context
