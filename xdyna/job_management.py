@@ -43,8 +43,8 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
         raise NotImplementedError("BOINC not yet implemented.")
     else:
         raise ValueError(f"Platform '{platform}' not supported.")
-    jm.status(platform=platform, verbose=False)
     if jm is not None:
+        jm.status(platform=platform, verbose=False)
         results = jm.retrieve(platform=platform)
         # Load surv if not already loaded
         if dastudy._surv is None:
@@ -99,12 +99,15 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 dastudy._surv.loc[part_id, 'delta_out'] = delta_out
                 dastudy._surv.loc[part_id, 's_out'] = s_out
                 dastudy._surv.loc[part_id, 'state'] = state
-
-            # Clean directory
-            for vv in results[kk]['output_file']:
-                vv_all_files = Path(vv).parent.glob('*')
-                for vvv in vv_all_files:
+                # Clean outputs
+                all_files_to_be_removed = jm.job.glob('*')
+                for vvv in all_files_to_be_removed:
                     vvv.unlink()
+                # Clean input in jm.job_specific_input_directory
+                all_files_to_be_removed = Path(jm.job_specific_input_directory / f"{jm._name}.{kk}.*").parent.glob('*')
+                for vvv in all_files_to_be_removed:
+                    vvv.unlink()
+                jm._job_list[kk][3] = True # Mark job as finished
 
         else:
             for kk,vv in results.items():
@@ -145,12 +148,16 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 dastudy._surv.loc[part_id, 'delta_out'] = delta_out
                 dastudy._surv.loc[part_id, 's_out'] = s_out
                 dastudy._surv.loc[part_id, 'state'] = state
-
-            # Clean directory
-            for vv in results[kk]['output_file']:
-                vv_all_files = Path(vv).parent.glob('*')
-                for vvv in vv_all_files:
+                # Clean outputs
+                all_files_to_be_removed = jm.job.glob('*')
+                for vvv in all_files_to_be_removed:
                     vvv.unlink()
+                # Clean input in jm.job_specific_input_directory
+                all_files_to_be_removed = Path(jm.job_specific_input_directory / f"{jm._name}.{kk}.*").parent.glob('*')
+                for vvv in all_files_to_be_removed:
+                    vvv.unlink()
+                jm._job_list[kk][3] = True # Mark job as finished
+        jm.save_job_list()
         dastudy.write_surv()
 
 # NOT allowed on parallel process!
@@ -169,6 +176,11 @@ def jobs_resubmit(dastudy:DA, platform:str='htcondor', npart: int|None=None, njo
         jm = JobManager(dastudy.meta.da_htcondor_meta)
         jm.job_class = DAJob
         jm.save_metadata()
+        if jm._job_list is None:
+            jm.load_job_list()
+        if len(jm._job_list) != 0:
+            jm.submit(platform=platform, **kwarg)
+            return
     else:
         # Set JobManager environment path
         input_directory  = dastudy.meta.path
@@ -207,15 +219,11 @@ def jobs_resubmit(dastudy:DA, platform:str='htcondor', npart: int|None=None, njo
             njobs = int(sum([np.ceil(sum( (~dastudy._surv.finished) &  (dastudy._surv.seed==ss) ) / npart) for ss in range(1,dastudy.meta.nseeds+1)]))
         else:
             njobs = int(np.ceil(sum( (~dastudy._surv.finished) ) / npart))
-# # <<<<<<<<<<<<<<<<<<<<< DEBUG
-#         print(f'npart: {npart}')
-#         print(f'njobs: {njobs}')
-#         print(f'len(dastudy._surv[dastudy._surv.submitted]): {len(dastudy._surv[~dastudy._surv.submitted])}')
-# # >>>>>>>>>>>>>>>>>>>>> DEBUG
     # select_particles = {}
     job_description = {}
     if dastudy.meta.nseeds != 0:
-        for seed in range(1, dastudy.meta.nseeds+1):
+        lseeds = [np.unique(dastudy._surv.seed[~dastudy._surv.submitted])]
+        for seed in lseeds:
             #  Select particules for the job
             mask = (dastudy._surv.submitted == False) & (dastudy._surv.seed == seed)
             if mask.sum() == 0:
@@ -249,12 +257,6 @@ def jobs_resubmit(dastudy:DA, platform:str='htcondor', npart: int|None=None, njo
                         'parameters':{'num_turns':dastudy.meta.max_turns, 'seed':seed},
                         'outputfiles':{'output_file':f'final_particles.parquet'}
                     }
-        #             select_particles[f'seed{seed}-{ii}'] = [seed,part]
-        # for kk,vv in select_particles.items():
-        #     job_description[kk] = {'inputfiles':{'line':dastudy.meta.line_file},
-        #                            'particles':vv[1],
-        #                            'parameters':{'num_turns':dastudy.meta.max_turns, 'seed':vv[0]},
-        #                            'outputfiles':{f'output_file':f'final_particles.parquet'}}
     else:
         #  Select particules for the job
         mask = (dastudy._surv.submitted == False)
@@ -290,13 +292,6 @@ def jobs_resubmit(dastudy:DA, platform:str='htcondor', npart: int|None=None, njo
                     'parameters':{'num_turns':dastudy.meta.max_turns},
                     'outputfiles':{f'output_file':f'final_particles.parquet'}
                 }
-                # select_particles[f'{ii}'] = part
-        # job_description = {}
-        # for kk,vv in select_particles.items():
-        #     job_description[kk] = {'inputfiles':{'line':dastudy.meta.line_file},
-        #                            'particles':vv[1],
-        #                            'parameter':{'num_turns':dastudy.meta.max_turns},
-        #                            'outputfiles':{f'output_file':f'final_particles.parquet'} }
     
     if co_search_at is not None:
         for kk in job_description.keys():
