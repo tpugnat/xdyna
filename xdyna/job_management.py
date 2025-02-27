@@ -46,6 +46,8 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
     if jm is not None:
         jm.status(platform=platform, verbose=False)
         results = jm.retrieve(platform=platform)
+        if len(results) == 0:
+            return
         # Load surv if not already loaded
         if dastudy._surv is None:
             dastudy.read_surv()
