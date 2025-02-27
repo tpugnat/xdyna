@@ -475,10 +475,10 @@ def run_da(argv) -> None:
     config, operands = parse(argv)
     if not operands:
         raise SystemExit(USAGE)
-    print(f"config:")
-    pprint(config, indent=4)
-    print(f"operands:")
-    pprint(operands, indent=4)
+    # print(f"config:")
+    # pprint(config, indent=4)
+    # print(f"operands:")
+    # pprint(operands, indent=4)
 
     # import xdyna
     # print(Path(xdyna.__file__).parent)
