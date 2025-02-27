@@ -343,10 +343,10 @@ def get_DA(config: Dict, operands: Dict):
             raise FileNotFoundError(f"{study} not found in {path}")
         # Load the study
         if (path / (study+'.meta.json')).exists():
-            print(f'   -> Loading study {study} from {path}')
+            # print(f'   -> Loading study {study} from {path}')
             return DA(name=study, path=path, **config)
         elif (path / (study+'.meta.csv')).exists():
-            print(f'   -> Loading study {study} from SixDesk input located at {path}')
+            print(f'Loading study {study} from SixDesk input located at {path}')
             from xdyna.da import load_sixdesk_output
             if 'normalised_emittance' not in config:
                 config['normalised_emittance'] = 2.5
@@ -366,9 +366,8 @@ def get_DA(config: Dict, operands: Dict):
         else:
             if not path.exists():
                 path.mkdir(parents=True)
-            print(f'   -> Create study {study} at {path}')
+            # print(f'   -> Create study {study} at {path}')
             return DA(name=study, path=path, **config, **operands['Create'])
-        
         
 
 def get_line(da_study: DA, config:dict):
@@ -448,13 +447,18 @@ def submit(da_study: DA, config:dict, refresh_particles:bool):
     jobs_resubmit(da_study,platform,**config)
 
 
-
-
 def track(da_study: DA, config:dict):
     da_study.track_job(**config)
 
 
 def status(da_study: DA):
+    print(f'   -> Status of the study')
+    if da_study._surv is None:
+        da_study.read_surv()
+    if da_study._surv is not None:
+        print(f"      -> Number of seeds simulated: {da_study.meta.nseeds}")
+        print(f"      -> Number of particle submitted to tracking: {sum(da_study._surv.submitted)} / {len(da_study._surv)}")
+        print(f"      -> Number of particle finished their tracking: {sum(da_study._surv.finished)} / {len(da_study._surv)}")
     jobs_status(da_study)
     # raise NotImplementedError("Status not implemented yet")
     # da_study.status()
