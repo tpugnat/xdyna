@@ -159,8 +159,8 @@ def jobs_retrive(dastudy:DA, platform: str='htcondor', co_search_at: str|None='i
                 # for vvv in all_files_to_be_removed:
                 #     vvv.unlink()
                 # jm._job_list[kk][3] = True # Mark job as finished
-        jm.set_jobs_ready_to_be_removed(list(results.keys()))
-        jm.save_job_list()
+        jm.set_jobs_ready_to_be_removed(job_list=list(results.keys()))
+        # jm.save_job_list()
         dastudy.write_surv()
 
 # NOT allowed on parallel process!
