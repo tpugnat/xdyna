@@ -1,5 +1,6 @@
 import xdyna as xd
-from pathlib import Path
+import matplotlib.pyplot as plt
+# from pathlib import Path
 
 
 
@@ -80,7 +81,7 @@ DA.calculate_davsturns(from_turn=from_t,to_turn=to_t)
 
 # Plots
 # -------------------------------------------------------------
-from xdyna.plot import plot_particles, plot_da_border, plot_davsturns_border
+from xdyna.plot import plot_particles, plot_border, plot_davsturns_border
 
 # Buildin routines have been implement in order to easily plot the results.
 type_plot="polar"
@@ -102,13 +103,13 @@ plot_particles(DA,ax[0],
 # This routine plots the DA border in the same format as the previous function. Similarly to 
 # "plot_particle", the turn and the type of plot must be given. The routine plots 2 borders 
 # representing an upper and a lower estimation of the DA.
-plot_da_border(DA,ax[0], 
-               at_turn=t,             # Status at this turn
-               type_plot=type_plot,   # Plot type: 'cartesian' or 'polar'
-               clower="blue",         # Color for lower da estimation.
-               cupper="red",          # Color for upper da estimation.
-               alpha=1, 
-               label="DA")
+plot_border(DA,ax[0], 
+            at_turn=t,             # Status at this turn
+            type_plot=type_plot,   # Plot type: 'cartesian' or 'polar'
+            clower="blue",         # Color for lower da estimation.
+            cupper="red",          # Color for upper da estimation.
+            alpha=1, 
+            label="DA")
 ax[0].set_title(f'DA at {t}')
 ax[0].legend(prop={'size': 15})
 
