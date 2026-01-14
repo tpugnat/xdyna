@@ -15,4 +15,4 @@ python -m xaux.run_da DASTUDYNAME_B1 . -rp -sb hcondor
 python -m xaux.run_da DASTUDYNAME_B1 . -st
 
 # Once all jobs are done and you have all the seeds, you can run the analysis following the script:
-# xdyna/examples/example_job_submission/Step4__calculate_DA.sh
+# xdyna/examples/example_job_submission/Step3__calculate_DA.sh
